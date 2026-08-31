@@ -38,13 +38,30 @@ final class PageController extends Controller
             ?: (string) env_get('AFFILIATE_SUPPORT_EMAIL', '')
             ?: 'support@orionbets.co';
 
+        $actionNetworkUrl = cms('affiliate_action_network_url')
+            ?: 'https://app.actionnetwork.com/4zu6/oharfju5';
+
         return $this->view('affiliates/index', [
             'title' => 'Affiliate Program — Orion Bets',
             'metaDescription' => 'Monetize your sports betting traffic. Promote a picks product with a 59% verified win rate across every sport and 68% in the NFL. 20% recurring commission.',
             'signupUrl' => $signupUrl,
             'portalUrl' => $portalUrl,
             'supportEmail' => $supportEmail,
-            'actionNetworkUrl' => 'https://app.actionnetwork.com/4zu6/oharfju5',
+            'actionNetworkUrl' => $actionNetworkUrl,
+            'heroEyebrow' => cms('affiliate_hero_eyebrow', 'OrionBets Affiliate Program'),
+            'heroTitle' => cms('affiliate_hero_title', 'Monetize your sports betting traffic.'),
+            'heroDescription' => cms('affiliate_hero_description', 'Promote a picks product with a 59% verified win rate across every sport — and 68% in the NFL. Both publicly tracked on Action Network, where your audience can check them without taking your word for it. Competitive commissions with no earnings cap — 20% of every monthly subscription for the first four months.'),
+            'commissionHeadline' => cms('affiliate_commission_headline', '20'),
+            'commissionSub' => cms('affiliate_commission_sub', 'Recurring on monthly plans · up to 4 months'),
+            'rate1Title' => cms('affiliate_rate_1_title', '20%'),
+            'rate1Sub' => cms('affiliate_rate_1_sub', 'Of every monthly subscription first four months'),
+            'rate2Title' => cms('affiliate_rate_2_title', '$49.99'),
+            'rate2Sub' => cms('affiliate_rate_2_sub', 'What a subscription costs the only product'),
+            'rate3Title' => cms('affiliate_rate_3_title', 'No cap'),
+            'rate3Sub' => cms('affiliate_rate_3_sub', 'On what you can earn however many you refer'),
+            'whyTitle' => cms('affiliate_why_title', 'Why partner with OrionBets'),
+            'bandTitle' => cms('affiliate_band_title', 'Get in the game.'),
+            'bandSub' => cms('affiliate_band_sub', 'No earnings cap · 68% NFL, 59% across every sport · signup in minutes'),
         ]);
     }
 

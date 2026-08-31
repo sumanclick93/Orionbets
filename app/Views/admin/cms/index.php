@@ -19,6 +19,7 @@ $val = static fn (string $key, string $default = ''): string => (string) ($cms[$
     <a href="#hero" class="is-active" data-tab-target="tab-hero">Hero & Banner</a>
     <a href="#branding" data-tab-target="tab-branding">Branding & Assets</a>
     <a href="#about" data-tab-target="tab-about">About Us & Stories</a>
+    <a href="#affiliates" data-tab-target="tab-affiliates">Affiliate Page</a>
     <a href="#footer" data-tab-target="tab-footer">Footer & Disclaimers</a>
 </div>
 
@@ -318,7 +319,130 @@ $val = static fn (string $key, string $default = ''): string => (string) ($cms[$
     </form>
 </section>
 
-<!-- Section 4: Footer & Disclaimers -->
+<!-- Section 4: Affiliate Page Copy & Links -->
+<section class="panel cms-section" id="tab-affiliates" style="margin-bottom:1.5rem;display:none;">
+    <div style="margin-bottom:1.2rem;">
+        <p class="kicker">Partner Program</p>
+        <h3 style="margin:0;">Affiliate Page Marketing Copy & Partner Links</h3>
+    </div>
+    <form method="post" action="<?= e(url('/admin/cms')) ?>">
+        <?= csrf_field() ?>
+        <input type="hidden" name="tab" value="affiliates">
+
+        <div style="margin-bottom:0.75rem;">
+            <p class="kicker">Partner Portal & External Links</p>
+            <h4 style="margin:0;">Everflow & Action Network URLs</h4>
+        </div>
+        <div class="form-row split">
+            <div>
+                <label for="everflow_signup_url">Everflow Signup URL</label>
+                <input id="everflow_signup_url" name="everflow_signup_url" value="<?= e($val('everflow_signup_url', 'https://orionbets.everflowclient.io/affiliate/signup')) ?>">
+            </div>
+            <div>
+                <label for="everflow_portal_url">Everflow Login Portal URL</label>
+                <input id="everflow_portal_url" name="everflow_portal_url" value="<?= e($val('everflow_portal_url', 'https://orionbets.everflowclient.io/')) ?>">
+            </div>
+        </div>
+
+        <div class="form-row split">
+            <div>
+                <label for="affiliate_support_email">Affiliate Desk Support Email</label>
+                <input id="affiliate_support_email" name="affiliate_support_email" value="<?= e($val('affiliate_support_email', 'support@orionbets.co')) ?>">
+            </div>
+            <div>
+                <label for="affiliate_action_network_url">Action Network Record URL</label>
+                <input id="affiliate_action_network_url" name="affiliate_action_network_url" value="<?= e($val('affiliate_action_network_url', 'https://app.actionnetwork.com/4zu6/oharfju5')) ?>">
+            </div>
+        </div>
+
+        <hr style="border:0;border-top:1px solid var(--color-border);margin:1.5rem 0;">
+
+        <div style="margin-bottom:0.75rem;">
+            <p class="kicker">Hero Section</p>
+            <h4 style="margin:0;">Header & Headlines</h4>
+        </div>
+        <div class="form-row split">
+            <div>
+                <label for="affiliate_hero_eyebrow">Hero Kicker Eyebrow</label>
+                <input id="affiliate_hero_eyebrow" name="affiliate_hero_eyebrow" value="<?= e($val('affiliate_hero_eyebrow', 'OrionBets Affiliate Program')) ?>">
+            </div>
+            <div>
+                <label for="affiliate_hero_title">Hero Main Title</label>
+                <input id="affiliate_hero_title" name="affiliate_hero_title" value="<?= e($val('affiliate_hero_title', 'Monetize your sports betting traffic.')) ?>">
+            </div>
+        </div>
+        <label for="affiliate_hero_description">Hero Description / Pitch Copy</label>
+        <textarea id="affiliate_hero_description" name="affiliate_hero_description" rows="3"><?= e($val('affiliate_hero_description', 'Promote a picks product with a 59% verified win rate across every sport — and 68% in the NFL. Both publicly tracked on Action Network, where your audience can check them without taking your word for it. Competitive commissions with no earnings cap — 20% of every monthly subscription for the first four months.')) ?></textarea>
+
+        <hr style="border:0;border-top:1px solid var(--color-border);margin:1.5rem 0;">
+
+        <div style="margin-bottom:0.75rem;">
+            <p class="kicker">Commission Callout</p>
+            <h4 style="margin:0;">Big Number & Rates Grid</h4>
+        </div>
+        <div class="form-row split">
+            <div>
+                <label for="affiliate_commission_headline">Big Commission Stat Number (e.g. 20)</label>
+                <input id="affiliate_commission_headline" name="affiliate_commission_headline" value="<?= e($val('affiliate_commission_headline', '20')) ?>">
+            </div>
+            <div>
+                <label for="affiliate_commission_sub">Commission Subtitle</label>
+                <input id="affiliate_commission_sub" name="affiliate_commission_sub" value="<?= e($val('affiliate_commission_sub', 'Recurring on monthly plans · up to 4 months')) ?>">
+            </div>
+        </div>
+
+        <div style="margin-top:0.75rem;">
+            <p class="kicker">Rate Cards</p>
+        </div>
+        <div class="form-row split">
+            <div>
+                <label for="affiliate_rate_1_title">Card 1 Title</label>
+                <input id="affiliate_rate_1_title" name="affiliate_rate_1_title" value="<?= e($val('affiliate_rate_1_title', '20%')) ?>">
+                <label for="affiliate_rate_1_sub">Card 1 Sub-copy</label>
+                <input id="affiliate_rate_1_sub" name="affiliate_rate_1_sub" value="<?= e($val('affiliate_rate_1_sub', 'Of every monthly subscription first four months')) ?>">
+            </div>
+            <div>
+                <label for="affiliate_rate_2_title">Card 2 Title</label>
+                <input id="affiliate_rate_2_title" name="affiliate_rate_2_title" value="<?= e($val('affiliate_rate_2_title', '$49.99')) ?>">
+                <label for="affiliate_rate_2_sub">Card 2 Sub-copy</label>
+                <input id="affiliate_rate_2_sub" name="affiliate_rate_2_sub" value="<?= e($val('affiliate_rate_2_sub', 'What a subscription costs the only product')) ?>">
+            </div>
+        </div>
+        <div class="form-row split" style="margin-top:0.5rem;">
+            <div>
+                <label for="affiliate_rate_3_title">Card 3 Title</label>
+                <input id="affiliate_rate_3_title" name="affiliate_rate_3_title" value="<?= e($val('affiliate_rate_3_title', 'No cap')) ?>">
+            </div>
+            <div>
+                <label for="affiliate_rate_3_sub">Card 3 Sub-copy</label>
+                <input id="affiliate_rate_3_sub" name="affiliate_rate_3_sub" value="<?= e($val('affiliate_rate_3_sub', 'On what you can earn however many you refer')) ?>">
+            </div>
+        </div>
+
+        <hr style="border:0;border-top:1px solid var(--color-border);margin:1.5rem 0;">
+
+        <div style="margin-bottom:0.75rem;">
+            <p class="kicker">Why Partner & Bottom Band</p>
+            <h4 style="margin:0;">Call to Action Headlines</h4>
+        </div>
+        <div class="form-row split">
+            <div>
+                <label for="affiliate_why_title">Why Partner Block Title</label>
+                <input id="affiliate_why_title" name="affiliate_why_title" value="<?= e($val('affiliate_why_title', 'Why partner with OrionBets')) ?>">
+            </div>
+            <div>
+                <label for="affiliate_band_title">Closing Band Headline</label>
+                <input id="affiliate_band_title" name="affiliate_band_title" value="<?= e($val('affiliate_band_title', 'Get in the game.')) ?>">
+            </div>
+        </div>
+        <label for="affiliate_band_sub">Closing Band Sub-text</label>
+        <input id="affiliate_band_sub" name="affiliate_band_sub" value="<?= e($val('affiliate_band_sub', 'No earnings cap · 68% NFL, 59% across every sport · signup in minutes')) ?>">
+
+        <button class="btn btn-primary" type="submit" style="margin-top:1rem;">Save Affiliate Page Content</button>
+    </form>
+</section>
+
+<!-- Section 5: Footer & Disclaimers -->
 <section class="panel cms-section" id="tab-footer" style="margin-bottom:1.5rem;display:none;">
     <div style="margin-bottom:1.2rem;">
         <p class="kicker">Legal & Footers</p>

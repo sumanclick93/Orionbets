@@ -213,6 +213,28 @@ function site_name(): string
     return strcasecmp($name, 'EDGEPLAY') === 0 ? 'Orion Bets' : $name;
 }
 
+function site_favicon_html(): string
+{
+    $customFavicon = cms('site_favicon_url', '');
+    $faviconUrl = $customFavicon !== '' ? url($customFavicon) : asset('icons/favicon.svg');
+    $ext = strtolower(pathinfo(parse_url($faviconUrl, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION));
+
+    $type = match ($ext) {
+        'png' => 'image/png',
+        'ico' => 'image/x-icon',
+        'gif' => 'image/gif',
+        'webp' => 'image/webp',
+        default => 'image/svg+xml',
+    };
+
+    $escapedUrl = e($faviconUrl);
+    $html = '<link rel="icon" href="' . $escapedUrl . '" type="' . $type . '">';
+    if ($ext !== 'svg') {
+        $html .= "\n    " . '<link rel="shortcut icon" href="' . $escapedUrl . '">';
+    }
+    return $html;
+}
+
 function cookie_consent_defaults(): array
 {
     return [

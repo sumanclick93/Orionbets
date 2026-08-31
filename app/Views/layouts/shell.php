@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <link rel="icon" href="<?= e(cms('site_favicon_url') ?: asset('icons/favicon.svg')) ?>" type="image/svg+xml">
+    <?= site_favicon_html() ?>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title><?= e($title ?? site_name()) ?></title>
     <meta name="description" content="<?= e($metaDescription ?? (string) settings('seo_description')) ?>">

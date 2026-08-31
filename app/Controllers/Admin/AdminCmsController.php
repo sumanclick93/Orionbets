@@ -69,6 +69,26 @@ final class AdminCmsController extends Controller
             'valprop_body' => 'textarea',
             'footer_disclaimer' => 'textarea',
             'footer_text' => 'text',
+
+            // Affiliate Page
+            'everflow_signup_url' => 'text',
+            'everflow_portal_url' => 'text',
+            'affiliate_support_email' => 'text',
+            'affiliate_action_network_url' => 'text',
+            'affiliate_hero_eyebrow' => 'text',
+            'affiliate_hero_title' => 'text',
+            'affiliate_hero_description' => 'textarea',
+            'affiliate_commission_headline' => 'text',
+            'affiliate_commission_sub' => 'text',
+            'affiliate_rate_1_title' => 'text',
+            'affiliate_rate_1_sub' => 'text',
+            'affiliate_rate_2_title' => 'text',
+            'affiliate_rate_2_sub' => 'text',
+            'affiliate_rate_3_title' => 'text',
+            'affiliate_rate_3_sub' => 'text',
+            'affiliate_why_title' => 'text',
+            'affiliate_band_title' => 'text',
+            'affiliate_band_sub' => 'text',
         ];
 
         $updatedKeys = [];

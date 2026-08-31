@@ -242,9 +242,9 @@ html {
   <div class="ob-af" data-af>
     <div class="ob-af__two">
       <div>
-        <span class="ob-af__kick" data-rise>OrionBets Affiliate Program</span>
-        <h2 data-rise>Monetize your sports betting traffic.</h2>
-        <p data-rise="2">Promote a picks product with a <strong>59% verified win rate across every sport</strong> &mdash; and <strong>68% in the NFL</strong>. Both publicly tracked on Action Network, where your audience can check them without taking your word for it. <strong>Competitive commissions with no earnings cap</strong> — 20% of every monthly subscription for the first four months.</p>
+        <span class="ob-af__kick" data-rise><?= e($heroEyebrow ?? 'OrionBets Affiliate Program') ?></span>
+        <h2 data-rise><?= e($heroTitle ?? 'Monetize your sports betting traffic.') ?></h2>
+        <p data-rise="2"><?= nl2br(e($heroDescription ?? 'Promote a picks product with a 59% verified win rate across every sport — and 68% in the NFL. Both publicly tracked on Action Network, where your audience can check them without taking your word for it. Competitive commissions with no earnings cap — 20% of every monthly subscription for the first four months.')) ?></p>
         <div class="ob-af__ctas" data-rise="3">
           <a class="ob-af__btn" href="<?= e(url($signupUrl)) ?>" target="_blank" rel="noopener">Become an Affiliate</a>
           <a class="ob-af__btn ob-af__btn--ghost" href="#af-faq">Learn More</a>
@@ -361,7 +361,7 @@ html {
       <marker id="obAfArr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10" fill="none" stroke="#EAE6DC" stroke-width="1.8" stroke-linecap="round"/></marker>
     </defs></svg>
 
-    <h2 data-rise>Why partner with OrionBets</h2>
+    <h2 data-rise><?= e($whyTitle ?? 'Why partner with OrionBets') ?></h2>
     <div class="ob-af__cards" style="margin-top:clamp(16px,2.6cqw,28px);">
       <div class="ob-af__card" data-rise="2">
         <svg viewBox="0 0 54 54"><g stroke="#EAE6DC" stroke-width="2.6" stroke-linecap="round" filter="url(#obAfRough)"><line x1="14" y1="12" x2="14" y2="40"/><line x1="22" y1="12" x2="22" y2="40"/><line x1="30" y1="12" x2="30" y2="40"/><line x1="38" y1="12" x2="38" y2="40"/><line x1="8" y1="38" x2="46" y2="16"/></g></svg>
@@ -388,13 +388,13 @@ html {
   <div class="ob-af" data-af>
     <div class="ob-af__pct" data-rise>
       <span class="ob-af__kick" style="text-align:center;">Commission</span>
-      <b data-count="20">20</b>
-      <div class="sub">Recurring on monthly plans · up to 4 months</div>
+      <b data-count="<?= e(preg_replace('/[^0-9]/', '', $commissionHeadline ?? '20') ?: '20') ?>"><?= e($commissionHeadline ?? '20') ?></b>
+      <div class="sub"><?= e($commissionSub ?? 'Recurring on monthly plans · up to 4 months') ?></div>
 
       <div class="ob-af__rates" data-rise="2">
-        <div class="ob-af__rate"><b>20%</b><span>Of every monthly subscription<br>first four months</span></div>
-        <div class="ob-af__rate"><b>$49.99</b><span>What a subscription costs<br>the only product</span></div>
-        <div class="ob-af__rate"><b>No cap</b><span>On what you can earn<br>however many you refer</span></div>
+        <div class="ob-af__rate"><b><?= e($rate1Title ?? '20%') ?></b><span><?= e($rate1Sub ?? 'Of every monthly subscription first four months') ?></span></div>
+        <div class="ob-af__rate"><b><?= e($rate2Title ?? '$49.99') ?></b><span><?= e($rate2Sub ?? 'What a subscription costs the only product') ?></span></div>
+        <div class="ob-af__rate"><b><?= e($rate3Title ?? 'No cap') ?></b><span><?= e($rate3Sub ?? 'On what you can earn however many you refer') ?></span></div>
       </div>
 
       <p style="margin:1.3em auto 0;max-width:48ch;text-align:center;">On every qualified new subscriber who signs up through your link. <strong>No cap on your earnings.</strong></p>
@@ -469,8 +469,8 @@ html {
        BLOCK 8 · CLOSING BAND
        ═══════════════════════════════════════════════════════════════ -->
   <div class="ob-af ob-af--band" data-af>
-    <h2 data-rise>Get in the game.</h2>
-    <p data-rise="2">No earnings cap &middot; 68% NFL, 59% across every sport &middot; signup in minutes</p>
+    <h2 data-rise><?= e($bandTitle ?? 'Get in the game.') ?></h2>
+    <p data-rise="2"><?= e($bandSub ?? 'No earnings cap · 68% NFL, 59% across every sport · signup in minutes') ?></p>
     <a class="ob-af__btn" href="<?= e(url($signupUrl)) ?>" data-rise="3" target="_blank" rel="noopener">Become an Affiliate</a>
   </div>
 

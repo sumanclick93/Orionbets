@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
+    <?= site_favicon_html() ?>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title><?= e(($status ?? 500) . ' — ' . site_name()) ?></title>
     <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>?v=20260821n">
