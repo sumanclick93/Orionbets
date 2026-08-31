@@ -1,0 +1,22 @@
+{
+    "name": "edgeplay/platform",
+    "description": "Orion Bets — daily picks subscription platform",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        },
+        "files": [
+            "app/Helpers/functions.php"
+        ]
+    },
+    "scripts": {
+        "migrate": "php bin/console.php migrate",
+        "seed": "php bin/console.php seed",
+        "setup": "php bin/console.php setup"
+    }
+}

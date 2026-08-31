@@ -1,0 +1,28 @@
+Options -Indexes
+DirectoryIndex index.php
+
+<IfModule mod_authz_core.c>
+    <FilesMatch "^\.env">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    RewriteCond %{HTTP_HOST} cpanel\.site$ [NC]
+    RewriteRule ^ https://orionbets.co%{REQUEST_URI} [L,R=301]
+
+    RewriteCond %{HTTP_HOST} ^www\.orionbets\.co$ [NC]
+    RewriteRule ^ https://orionbets.co%{REQUEST_URI} [L,R=301]
+
+    RewriteCond %{HTTP_HOST} ^orionbets\.co$ [NC]
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !https [NC]
+    RewriteRule ^ https://orionbets.co%{REQUEST_URI} [L,R=301]
+
+    RewriteRule ^index\.php$ - [L]
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>
