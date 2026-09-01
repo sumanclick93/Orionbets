@@ -12,18 +12,105 @@ final class PerformanceService
     {
     }
 
-    public function summary(string $range = 'all'): array
+    /**
+     * Get available active leagues from database or pick history.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getAvailableLeagues(): array
     {
-        [$start, $end] = $this->bounds($range);
+        if ($this->db->tableExists('leagues')) {
+            $leagues = $this->db->fetchAll(
+                'SELECT DISTINCT l.id, l.name, l.slug
+                 FROM leagues l
+                 INNER JOIN picks p ON p.league_id = l.id
+                 WHERE p.deleted_at IS NULL
+                 ORDER BY l.name ASC'
+            );
+            if (!empty($leagues)) {
+                return $leagues;
+            }
 
-        $params = [];
-        $dateSql = '1=1';
-        if ($start && $end) {
-            $dateSql = 'COALESCE(pr.recorded_at, p.updated_at, p.published_at) BETWEEN :start AND :end';
-            $params = ['start' => $start, 'end' => $end];
+            return $this->db->fetchAll(
+                'SELECT id, name, slug FROM leagues WHERE is_active = 1 ORDER BY name ASC'
+            );
         }
 
-        $cached = $this->cached($range);
+        return [];
+    }
+
+    /**
+     * Get available distinct season years from pick history.
+     *
+     * @return array<int, int>
+     */
+    public function getAvailableSeasons(): array
+    {
+        $rows = $this->db->fetchAll(
+            'SELECT DISTINCT YEAR(COALESCE(pr.recorded_at, p.updated_at, p.published_at)) AS season_year
+             FROM picks p
+             LEFT JOIN pick_results pr ON pr.pick_id = p.id
+             WHERE p.deleted_at IS NULL
+               AND (pr.recorded_at IS NOT NULL OR p.published_at IS NOT NULL)
+             ORDER BY season_year DESC'
+        );
+
+        $years = [];
+        foreach ($rows as $row) {
+            if (!empty($row['season_year'])) {
+                $years[] = (int) $row['season_year'];
+            }
+        }
+
+        if (empty($years)) {
+            $curr = (int) date('Y');
+            $years = [$curr, $curr - 1, $curr - 2];
+        }
+
+        return array_values(array_unique($years));
+    }
+
+    public function summary(?string $range = 'all', ?string $season = null, ?string $league = null): array
+    {
+        $range = $range ?: 'all';
+        [$start, $end] = $this->bounds($range);
+
+        $where = [
+            'p.deleted_at IS NULL',
+            '(p.is_active = 1 OR p.is_active IS NULL)',
+            "(p.status IN ('won','lost','push') OR pr.result IN ('won','lost','push'))",
+        ];
+        $params = [];
+
+        if ($range === '7d' || $range === '30d' || $range === '90d') {
+            if ($start && $end) {
+                $where[] = 'COALESCE(pr.recorded_at, p.updated_at, p.published_at) BETWEEN :start AND :end';
+                $params['start'] = $start;
+                $params['end'] = $end;
+            }
+        }
+
+        if (!empty($season)) {
+            $where[] = 'YEAR(COALESCE(pr.recorded_at, p.updated_at, p.published_at)) = :season_year';
+            $params['season_year'] = (int) $season;
+        } elseif ($range === 'season') {
+            $where[] = 'YEAR(COALESCE(pr.recorded_at, p.updated_at, p.published_at)) = :season_year';
+            $params['season_year'] = (int) date('Y');
+        }
+
+        if (!empty($league)) {
+            if (is_numeric($league)) {
+                $where[] = 'p.league_id = :league_id';
+                $params['league_id'] = (int) $league;
+            } else {
+                $where[] = 'l.slug = :league_slug';
+                $params['league_slug'] = $league;
+            }
+        }
+
+        $whereSql = implode(' AND ', $where);
+
+        $cached = (empty($season) && empty($league)) ? $this->cached($range) : [];
         $row = $this->db->fetch(
             "SELECT
                 COUNT(*) AS total,
@@ -39,10 +126,8 @@ final class PerformanceService
                 COALESCE(AVG(p.confidence),0) AS avg_confidence
              FROM picks p
              LEFT JOIN pick_results pr ON pr.pick_id = p.id
-             WHERE p.deleted_at IS NULL
-               AND (p.is_active = 1 OR p.is_active IS NULL)
-               AND (p.status IN ('won','lost','push') OR pr.result IN ('won','lost','push'))
-               AND {$dateSql}",
+             LEFT JOIN leagues l ON l.id = p.league_id
+             WHERE {$whereSql}",
             $params
         ) ?? [];
 
@@ -51,7 +136,7 @@ final class PerformanceService
         $units = (float) ($row['units'] ?? 0);
         $roi = $decided > 0 ? round(($units / $decided) * 100, 2) : 0.0;
 
-        $streaks = $this->streaks();
+        $streaks = $this->streaks($whereSql, $params);
         $isDemo = empty($cached['synced_at']);
 
         return [
@@ -68,19 +153,57 @@ final class PerformanceService
             'is_demo' => $isDemo,
             'synced_at' => $cached['synced_at'] ?? null,
             'range' => $range,
+            'season' => $season,
+            'league' => $league,
         ];
     }
 
-    public function chartPayload(string $range = 'all'): array
+    public function chartPayload(?string $range = 'all', ?string $season = null, ?string $league = null): array
     {
+        $range = $range ?: 'all';
+        [$start, $end] = $this->bounds($range);
+
+        $where = ['p.deleted_at IS NULL'];
+        $params = [];
+
+        if ($range === '7d' || $range === '30d' || $range === '90d') {
+            if ($start && $end) {
+                $where[] = 'COALESCE(pr.recorded_at, p.updated_at, p.published_at) BETWEEN :start AND :end';
+                $params['start'] = $start;
+                $params['end'] = $end;
+            }
+        }
+
+        if (!empty($season)) {
+            $where[] = 'YEAR(COALESCE(pr.recorded_at, p.updated_at, p.published_at)) = :season_year';
+            $params['season_year'] = (int) $season;
+        } elseif ($range === 'season') {
+            $where[] = 'YEAR(COALESCE(pr.recorded_at, p.updated_at, p.published_at)) = :season_year';
+            $params['season_year'] = (int) date('Y');
+        }
+
+        if (!empty($league)) {
+            if (is_numeric($league)) {
+                $where[] = 'p.league_id = :league_id';
+                $params['league_id'] = (int) $league;
+            } else {
+                $where[] = 'l.slug = :league_slug';
+                $params['league_slug'] = $league;
+            }
+        }
+
+        $whereSql = implode(' AND ', $where);
+
         $rows = $this->db->fetchAll(
-            "SELECT DATE(pr.recorded_at) AS d, pr.result, pr.units, s.name AS sport, l.name AS league
+            "SELECT DATE(COALESCE(pr.recorded_at, p.published_at, p.created_at)) AS d,
+                    pr.result, pr.units, s.name AS sport, l.name AS league
              FROM pick_results pr
              INNER JOIN picks p ON p.id = pr.pick_id
              INNER JOIN sports s ON s.id = p.sport_id
              LEFT JOIN leagues l ON l.id = p.league_id
-             WHERE p.deleted_at IS NULL
-             ORDER BY pr.recorded_at ASC"
+             WHERE {$whereSql}
+             ORDER BY COALESCE(pr.recorded_at, p.published_at, p.created_at) ASC",
+            $params
         );
 
         $cumulative = [];
@@ -95,9 +218,13 @@ final class PerformanceService
             $cumulative[] = ['date' => $row['d'], 'units' => round($running, 2)];
             $month = substr((string) $row['d'], 0, 7);
             $monthly[$month] = ($monthly[$month] ?? 0) + (float) $row['units'];
-            $wl[$row['result']] = ($wl[$row['result']] ?? 0) + 1;
-            $sports[$row['sport']] = ($sports[$row['sport']] ?? 0) + 1;
-            if ($row['league']) {
+            if (!empty($row['result'])) {
+                $wl[$row['result']] = ($wl[$row['result']] ?? 0) + 1;
+            }
+            if (!empty($row['sport'])) {
+                $sports[$row['sport']] = ($sports[$row['sport']] ?? 0) + 1;
+            }
+            if (!empty($row['league'])) {
                 $leagues[$row['league']] = ($leagues[$row['league']] ?? 0) + 1;
             }
         }
@@ -113,17 +240,19 @@ final class PerformanceService
             'distribution' => $wl,
             'sports' => $sports,
             'leagues' => $leagues,
-            'demo' => $this->cached($range) === [],
+            'demo' => (empty($season) && empty($league)) ? ($this->cached($range) === []) : true,
         ];
     }
 
-    private function streaks(): array
+    private function streaks(string $whereSql, array $params): array
     {
         $results = $this->db->fetchAll(
             "SELECT pr.result FROM pick_results pr
              INNER JOIN picks p ON p.id = pr.pick_id
-             WHERE p.deleted_at IS NULL AND pr.result IN ('won','lost')
-             ORDER BY pr.recorded_at ASC"
+             LEFT JOIN leagues l ON l.id = p.league_id
+             WHERE {$whereSql} AND pr.result IN ('won','lost')
+             ORDER BY pr.recorded_at ASC",
+            $params
         );
 
         $best = 0;

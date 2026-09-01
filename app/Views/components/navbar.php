@@ -11,6 +11,7 @@ $playbookActive = is_active_path('/the-playbook') || is_active_path('/pricing') 
             <a class="<?= nav_class('/about') ?>" href="<?= e(url('/about')) ?>">About Us</a>
             <a class="<?= nav_class('/affiliates') ?>" href="<?= e(url('/affiliates')) ?>">Affiliates</a>
             <a class="<?= $playbookActive ? 'is-active' : '' ?>" href="<?= e(url('/the-playbook')) ?>">The Playbook</a>
+            <a class="<?= nav_class('/performance') ?>" href="<?= e(url('/performance')) ?>">See the Record</a>
         </nav>
         <div class="header-actions">
             <?php if ($user): ?>
@@ -36,6 +37,7 @@ $playbookActive = is_active_path('/the-playbook') || is_active_path('/pricing') 
         <a class="<?= nav_class('/about') ?>" href="<?= e(url('/about')) ?>">About Us</a>
         <a class="<?= nav_class('/affiliates') ?>" href="<?= e(url('/affiliates')) ?>">Affiliates</a>
         <a class="<?= $playbookActive ? 'is-active' : '' ?>" href="<?= e(url('/the-playbook')) ?>">The Playbook</a>
+        <a class="<?= nav_class('/performance') ?>" href="<?= e(url('/performance')) ?>">See the Record</a>
     </nav>
     <div class="mobile-nav__ctas">
         <?php if ($user): ?>
