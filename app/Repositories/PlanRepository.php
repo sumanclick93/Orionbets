@@ -70,6 +70,16 @@ final class PlanRepository extends BaseRepository
         }, $this->all());
     }
 
+    public function create(array $data): int
+    {
+        return $this->db->insert('subscription_plans', $data);
+    }
+
+    public function update(int $id, array $data): void
+    {
+        $this->db->update('subscription_plans', $data, 'id = :id', ['id' => $id]);
+    }
+
     public function toggleStatus(int $id): bool
     {
         $plan = $this->find($id);

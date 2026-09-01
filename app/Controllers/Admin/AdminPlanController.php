@@ -92,28 +92,49 @@ final class AdminPlanController extends Controller
             throw new HttpException(404, 'Subscription plan not found.');
         }
 
-        // Check if there are active subscribers attached to this plan
-        $activeSubs = 0;
+        // Check if there are any subscribers or checkout records attached to this plan
+        $totalSubs = 0;
         if ($this->db->tableExists('subscriptions')) {
-            $activeSubs = (int) $this->db->fetchColumn(
-                "SELECT COUNT(*) FROM subscriptions WHERE plan_id = :pid AND status IN ('active', 'trialing')",
+            $totalSubs = (int) $this->db->fetchColumn(
+                'SELECT COUNT(*) FROM subscriptions WHERE plan_id = :pid',
                 ['pid' => $planId]
             );
         }
 
-        if ($activeSubs > 0) {
-            // Cannot hard delete a plan with active subscribers; archive it instead
+        $totalCheckouts = 0;
+        if ($this->db->tableExists('checkout_sessions')) {
+            $totalCheckouts = (int) $this->db->fetchColumn(
+                'SELECT COUNT(*) FROM checkout_sessions WHERE plan_id = :pid',
+                ['pid' => $planId]
+            );
+        }
+
+        if ($totalSubs > 0 || $totalCheckouts > 0) {
+            // Cannot hard delete a plan with subscriber or checkout history due to foreign key constraints; archive it instead
             $repo->update($planId, ['is_active' => 0]);
-            $this->flash('error', 'Cannot delete plan with active subscribers. It has been archived instead.');
+            (new AuditService($this->db))->log($this->auth->id(), 'plan_archived', 'plan', (string) $planId, $this->request, [
+                'name' => $existing['name'],
+                'reason' => 'has_linked_records',
+            ]);
+            $this->flash('warning', 'Plan #' . $planId . ' (' . $existing['name'] . ') cannot be permanently deleted because it has subscriber/checkout history. It has been archived instead.');
             $this->redirect('/admin/plans');
         }
 
-        $repo->delete($planId);
-        (new AuditService($this->db))->log($this->auth->id(), 'plan_deleted', 'plan', (string) $planId, $this->request, [
-            'name' => $existing['name'],
-        ]);
+        try {
+            $repo->delete($planId);
+            (new AuditService($this->db))->log($this->auth->id(), 'plan_deleted', 'plan', (string) $planId, $this->request, [
+                'name' => $existing['name'],
+            ]);
+            $this->flash('success', 'Plan #' . $planId . ' deleted successfully.');
+        } catch (\Throwable $e) {
+            $repo->update($planId, ['is_active' => 0]);
+            (new AuditService($this->db))->log($this->auth->id(), 'plan_archived', 'plan', (string) $planId, $this->request, [
+                'name' => $existing['name'],
+                'error' => $e->getMessage(),
+            ]);
+            $this->flash('warning', 'Plan #' . $planId . ' (' . $existing['name'] . ') could not be deleted due to linked records. It has been archived instead.');
+        }
 
-        $this->flash('success', 'Plan #' . $planId . ' deleted successfully.');
         $this->redirect('/admin/plans');
     }
 
