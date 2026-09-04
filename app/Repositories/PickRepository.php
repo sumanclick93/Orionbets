@@ -74,17 +74,37 @@ final class PickRepository extends BaseRepository
             $params['sport_alt'] = $filters['sport'];
         }
         if (!empty($filters['league'])) {
-            $where[] = '(l.slug = :league OR p.league = :league_alt)';
-            $params['league'] = $filters['league'];
-            $params['league_alt'] = $filters['league'];
+            if (is_numeric($filters['league'])) {
+                $where[] = '(p.league_id = :league_id1 OR l.id = :league_id2)';
+                $params['league_id1'] = (int) $filters['league'];
+                $params['league_id2'] = (int) $filters['league'];
+            } else {
+                $slug = strtolower(trim((string) $filters['league']));
+                $where[] = '(l.slug = :league_slug OR p.league = :league_alt OR s.slug = :sport_slug)';
+                $params['league_slug'] = $slug;
+                $params['league_alt'] = $slug;
+                $params['sport_slug'] = $slug;
+            }
         }
         if (!empty($filters['status'])) {
             $where[] = 'p.status = :status';
             $params['status'] = $filters['status'];
         }
+        if (isset($filters['active']) && $filters['active'] !== '') {
+            $where[] = 'p.is_active = :active';
+            $params['active'] = (int) $filters['active'];
+        }
         if (!empty($filters['q'])) {
-            $where[] = '(p.title LIKE :q OR p.analysis_excerpt LIKE :q OR p.matchup LIKE :q OR p.selection_line LIKE :q OR e.name LIKE :q)';
-            $params['q'] = '%' . $filters['q'] . '%';
+            $where[] = '(p.title LIKE :q1 OR p.analysis_excerpt LIKE :q2 OR p.matchup LIKE :q3 OR p.selection_line LIKE :q4 OR p.action_network_pick_id LIKE :q5 OR e.name LIKE :q6 OR e.home_team LIKE :q7 OR e.away_team LIKE :q8)';
+            $qVal = '%' . $filters['q'] . '%';
+            $params['q1'] = $qVal;
+            $params['q2'] = $qVal;
+            $params['q3'] = $qVal;
+            $params['q4'] = $qVal;
+            $params['q5'] = $qVal;
+            $params['q6'] = $qVal;
+            $params['q7'] = $qVal;
+            $params['q8'] = $qVal;
         }
         if (!empty($filters['date'])) {
             $where[] = 'DATE(COALESCE(e.start_time, e.event_at, p.published_at)) = :dt';

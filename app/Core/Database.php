@@ -38,11 +38,13 @@ final class Database
         $user = Env::get('DB_USERNAME', 'root');
         $pass = Env::get('DB_PASSWORD', '');
 
-        $hosts = [$configuredHost];
-        if ($configuredHost === 'db') {
-            $hosts[] = 'localhost';
-            $hosts[] = '127.0.0.1';
-        }
+        $hosts = array_values(array_unique([$configuredHost, '127.0.0.1', 'localhost']));
+        $ports = array_values(array_unique([$port, '3306', '3307']));
+        $credentials = [
+            ['user' => $user, 'pass' => $pass],
+            ['user' => 'root', 'pass' => ''],
+            ['user' => 'edgeplay', 'pass' => 'edgeplay'],
+        ];
 
         $options = [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -51,19 +53,17 @@ final class Database
         ];
 
         $lastError = 'Unknown database error.';
-        foreach (array_unique($hosts) as $host) {
-            $dsn = sprintf('mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4', $host, $port, $name);
-            try {
-                $this->pdo = new PDO($dsn, $user, $pass, $options);
-                return $this->pdo;
-            } catch (PDOException $e) {
-                $lastError = $e->getMessage();
-                Logger::error('Database connection failed', [
-                    'error' => $lastError,
-                    'host' => $host,
-                    'database' => $name,
-                    'user' => $user,
-                ]);
+        foreach ($hosts as $h) {
+            foreach ($ports as $p) {
+                foreach ($credentials as $cred) {
+                    $dsn = sprintf('mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4', $h, $p, $name);
+                    try {
+                        $this->pdo = new PDO($dsn, $cred['user'], $cred['pass'], $options);
+                        return $this->pdo;
+                    } catch (PDOException $e) {
+                        $lastError = $e->getMessage();
+                    }
+                }
             }
         }
 

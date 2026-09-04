@@ -12,16 +12,24 @@ final class AdminCatalogController extends Controller
 {
     public function events(): string
     {
-        $result = (new EventRepository($this->db))->search([
+        $filters = [
             'q' => (string) $this->request->query('q', ''),
             'status' => (string) $this->request->query('status', ''),
-        ], max(1, (int) $this->request->query('page', 1)), 50);
+            'league' => (string) $this->request->query('league', ''),
+            'active' => (string) $this->request->query('active', ''),
+            'date' => (string) $this->request->query('date', ''),
+        ];
+
+        $result = (new EventRepository($this->db))->search($filters, max(1, (int) $this->request->query('page', 1)), 50);
+        $perfService = new \App\Services\PerformanceService($this->db);
 
         return $this->view('admin/events/index', [
             'title' => 'Events',
             'events' => $result['data'],
             'total' => $result['total'],
             'page' => $result['page'],
+            'filters' => $filters,
+            'availableLeagues' => $perfService->getAvailableLeagues(),
             'lastSync' => \App\Services\ActionNetworkService::make($this->db)->lastSync('scoreboard'),
         ], 'admin');
     }

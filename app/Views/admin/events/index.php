@@ -1,10 +1,14 @@
 <?php
 $q = (string) ($_GET['q'] ?? '');
 $status = (string) ($_GET['status'] ?? '');
+$league = (string) ($_GET['league'] ?? '');
+$active = (string) ($_GET['active'] ?? '');
 $lastSync = $lastSync ?? null;
 $syncedAt = $lastSync['created_at'] ?? null;
 $total = $total ?? count($events ?? []);
 $page = $page ?? 1;
+$availableLeagues = $availableLeagues ?? [];
+$hasFilters = !empty($q) || !empty($status) || !empty($league) || $active !== '';
 ?>
 <div class="page-toolbar">
     <div>
@@ -26,15 +30,37 @@ $page = $page ?? 1;
         <a class="btn btn-ghost" href="<?= e(url('/admin/sync')) ?>">Sync logs</a>
     </div>
 </div>
-<form method="get" class="filter-bar admin-table-tools">
-    <input name="q" placeholder="Search matchup or synced ID" value="<?= e($q) ?>">
-    <select name="status">
+<form method="get" class="filter-bar admin-table-tools" style="display:flex; flex-wrap:wrap; gap:0.75rem; align-items:center;">
+    <input name="q" placeholder="Search matchup, teams, or synced ID" value="<?= e($q) ?>" style="flex:1; min-width:200px;">
+    
+    <select name="league" style="min-width:140px;">
+        <option value="">All Leagues</option>
+        <?php foreach ($availableLeagues as $lg): ?>
+            <?php $lgVal = (string) ($lg['slug'] ?? $lg['id']); ?>
+            <option value="<?= e($lgVal) ?>" <?= ($league === $lgVal || $league === (string) $lg['id'] || $league === (string) $lg['slug']) ? 'selected' : '' ?>>
+                <?= e($lg['name']) ?>
+            </option>
+        <?php endforeach; ?>
+    </select>
+
+    <select name="status" style="min-width:130px;">
         <option value="">All statuses</option>
         <?php foreach (['scheduled','in_progress','completed','canceled'] as $st): ?>
             <option value="<?= e($st) ?>" <?= $status === $st ? 'selected' : '' ?>><?= e(pick_status_label($st)) ?></option>
         <?php endforeach; ?>
     </select>
+
+    <select name="active" style="min-width:120px;">
+        <option value="">All visibility</option>
+        <option value="1" <?= $active === '1' ? 'selected' : '' ?>>Active</option>
+        <option value="0" <?= $active === '0' ? 'selected' : '' ?>>Hidden</option>
+    </select>
+
     <button class="btn btn-primary" type="submit">Search</button>
+
+    <?php if ($hasFilters): ?>
+        <a href="<?= e(url('/admin/events')) ?>" class="btn btn-ghost" style="color:var(--color-text-muted);">Clear filters</a>
+    <?php endif; ?>
 </form>
 <?php if (!$events): ?>
     <?= component('empty-state', [

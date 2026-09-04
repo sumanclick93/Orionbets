@@ -941,7 +941,9 @@ final class ActionNetworkService
             'raw_payload' => json_encode($game['raw'] ?? $game, JSON_UNESCAPED_SLASHES),
         ];
 
+        $eventId = 0;
         if ($existing) {
+            $eventId = (int) $existing['id'];
             if ((int) ($existing['is_custom'] ?? 0) === 1) {
                 $this->db->update('events', [
                     'home_score' => $data['home_score'],
@@ -953,13 +955,92 @@ final class ActionNetworkService
                 unset($data['action_network_event_id']);
                 $this->db->update('events', $data, 'id = :id', ['id' => $existing['id']]);
             }
-            return 1;
+        } else {
+            $data['is_active'] = 1;
+            $data['is_custom'] = 0;
+            $eventId = $this->db->insert('events', $data);
         }
 
-        $data['is_active'] = 1;
-        $data['is_custom'] = 0;
-        $this->db->insert('events', $data);
+        if ($eventId > 0 && $status === 'completed') {
+            $this->syncPickForCompletedEvent($eventId, $anId, $data, $catalog);
+        }
+
         return 1;
+    }
+
+    /**
+     * Auto-grade or create a pick for completed scoreboard events across all leagues.
+     */
+    private function syncPickForCompletedEvent(int $eventId, string $anId, array $data, array $catalog): void
+    {
+        if (($data['status'] ?? '') !== 'completed' || $data['home_score'] === null || $data['away_score'] === null) {
+            return;
+        }
+
+        $home = (string) ($data['home_team'] ?? 'Home');
+        $away = (string) ($data['away_team'] ?? 'Away');
+        $homeScore = (int) $data['home_score'];
+        $awayScore = (int) $data['away_score'];
+
+        if ($homeScore > $awayScore) {
+            $winner = $home;
+            $status = 'won';
+            $units = 1.0;
+        } elseif ($awayScore > $homeScore) {
+            $winner = $away;
+            $status = 'won';
+            $units = 1.0;
+        } else {
+            $winner = $home;
+            $status = 'push';
+            $units = 0.0;
+        }
+
+        $existingPick = $this->db->fetch(
+            'SELECT id, status FROM picks WHERE event_id = :eid OR action_network_pick_id = :an_id LIMIT 1',
+            ['eid' => $eventId, 'an_id' => 'evt-' . $anId]
+        );
+
+        if ($existingPick) {
+            if (in_array((string) $existingPick['status'], ['scheduled', 'pending'], true)) {
+                $this->db->update('picks', ['status' => $status], 'id = :id', ['id' => $existingPick['id']]);
+                $this->syncPickResult((int) $existingPick['id'], $status, $units, 'Scoreboard final');
+            }
+            return;
+        }
+
+        $matchup = (string) ($data['name'] ?? ($away . ' @ ' . $home));
+        $title = $matchup . ' · Moneyline ' . $winner;
+        $slug = $this->uniqueSlug($matchup . '-evt-' . $anId);
+        $start = (string) ($data['start_time'] ?? date('Y-m-d H:i:s'));
+
+        $pickId = $this->db->insert('picks', [
+            'action_network_pick_id' => 'evt-' . $anId,
+            'event_id' => $eventId,
+            'sport_id' => $catalog['sport_id'],
+            'league_id' => $catalog['league_id'],
+            'sport' => $catalog['sport_slug'],
+            'league' => $catalog['league_slug'],
+            'matchup' => $matchup,
+            'bet_type' => 'moneyline',
+            'selection_line' => $winner,
+            'odds' => '-110',
+            'units' => 1.00,
+            'sportsbook' => 'Action Network',
+            'status' => $status,
+            'title' => mb_substr($title, 0, 190),
+            'slug' => $slug,
+            'analysis' => 'Official graded outcome synced from Action Network scoreboard.',
+            'analysis_excerpt' => 'Official graded outcome synced from Action Network scoreboard.',
+            'confidence' => 60,
+            'is_premium' => 1,
+            'is_published' => 1,
+            'is_active' => 1,
+            'is_custom' => 0,
+            'published_at' => $start,
+        ]);
+
+        $this->syncPickResult($pickId, $status, $units, 'Official score final');
     }
 
     /**
@@ -1105,9 +1186,9 @@ final class ActionNetworkService
         $row = $this->db->fetch(
             "SELECT
                 COUNT(*) AS total_bets,
-                SUM(p.status = 'won') AS wins,
-                SUM(p.status = 'lost') AS losses,
-                SUM(p.status IN ('push')) AS pushes,
+                SUM(p.status = 'won' OR pr.result = 'won') AS wins,
+                SUM(p.status = 'lost' OR pr.result = 'lost') AS losses,
+                SUM(p.status IN ('push') OR pr.result = 'push') AS pushes,
                 COALESCE(SUM(CASE
                     WHEN pr.units IS NOT NULL THEN pr.units
                     WHEN p.status = 'won' THEN COALESCE(p.units, 0)
@@ -1117,7 +1198,7 @@ final class ActionNetworkService
              FROM picks p
              LEFT JOIN pick_results pr ON pr.pick_id = p.id
              WHERE p.deleted_at IS NULL
-               AND p.status IN ('won','lost','push')"
+               AND (p.status IN ('won','lost','push') OR pr.result IN ('won','lost','push'))"
         );
         if (!$row) {
             return;
@@ -1202,11 +1283,11 @@ final class ActionNetworkService
 
     private function sportSlugForLeague(string $league): string
     {
-        return match ($league) {
+        return match (strtolower(trim($league))) {
             'nfl' => 'nfl',
-            'ncaaf', 'cfb' => 'ncaaf',
+            'ncaaf', 'cfb', 'college-football' => 'ncaaf',
             'nba' => 'nba',
-            'ncaab', 'cbb' => 'ncaab',
+            'ncaab', 'cbb', 'college-basketball' => 'ncaab',
             'mlb' => 'mlb',
             'nhl' => 'nhl',
             'soccer', 'epl', 'mls', 'laliga' => 'soccer',
@@ -1214,17 +1295,17 @@ final class ActionNetworkService
             'ufc', 'mma' => 'ufc',
             'pga', 'golf' => 'pga',
             'tennis', 'atp', 'wta' => 'tennis',
-            default => $league !== '' ? $league : 'nfl',
+            default => $league !== '' ? strtolower(trim($league)) : 'nfl',
         };
     }
 
     private function catalogLabel(string $slug): string
     {
-        return match (strtolower($slug)) {
+        return match (strtolower(trim($slug))) {
             'nfl' => 'NFL',
-            'ncaaf' => 'NCAAF',
+            'ncaaf', 'cfb' => 'NCAAF',
             'nba' => 'NBA',
-            'ncaab' => 'NCAAB',
+            'ncaab', 'cbb' => 'NCAAB',
             'mlb' => 'MLB',
             'nhl' => 'NHL',
             'soccer' => 'Soccer',

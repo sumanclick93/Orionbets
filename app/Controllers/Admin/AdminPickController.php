@@ -20,11 +20,17 @@ final class AdminPickController extends Controller
     public function index(): string
     {
         $archived = $this->request->query('view', '') === 'archived';
-        $result = (new PickRepository($this->db))->search([
+        $filters = [
             'q' => (string) $this->request->query('q', ''),
             'status' => (string) $this->request->query('status', ''),
+            'league' => (string) $this->request->query('league', ''),
+            'active' => (string) $this->request->query('active', ''),
+            'date' => (string) $this->request->query('date', ''),
             'archived' => $archived,
-        ], max(1, (int) $this->request->query('page', 1)), 50);
+        ];
+
+        $result = (new PickRepository($this->db))->search($filters, max(1, (int) $this->request->query('page', 1)), 50);
+        $perfService = new \App\Services\PerformanceService($this->db);
 
         return $this->view('admin/picks/index', [
             'title' => 'Manage picks — Orion Bets',
@@ -32,6 +38,8 @@ final class AdminPickController extends Controller
             'total' => $result['total'],
             'page' => $result['page'],
             'archived' => $archived,
+            'filters' => $filters,
+            'availableLeagues' => $perfService->getAvailableLeagues(),
             'lastSync' => ActionNetworkService::make($this->db)->lastSync(),
         ], 'admin');
     }

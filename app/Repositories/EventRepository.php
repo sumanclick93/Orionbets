@@ -22,26 +22,50 @@ final class EventRepository extends BaseRepository
         $where = ['1=1'];
         $params = [];
         if (!empty($filters['q'])) {
-            $where[] = '(e.name LIKE :q OR e.home_team LIKE :q OR e.away_team LIKE :q OR e.action_network_event_id LIKE :q)';
-            $params['q'] = '%' . $filters['q'] . '%';
+            $where[] = '(e.name LIKE :q1 OR e.home_team LIKE :q2 OR e.away_team LIKE :q3 OR e.action_network_event_id LIKE :q4)';
+            $qVal = '%' . $filters['q'] . '%';
+            $params['q1'] = $qVal;
+            $params['q2'] = $qVal;
+            $params['q3'] = $qVal;
+            $params['q4'] = $qVal;
         }
         if (!empty($filters['status'])) {
             $where[] = 'e.status = :status';
             $params['status'] = $filters['status'];
         }
+        if (!empty($filters['league'])) {
+            if (is_numeric($filters['league'])) {
+                $where[] = '(e.league_id = :league_id1 OR l.id = :league_id2)';
+                $params['league_id1'] = (int) $filters['league'];
+                $params['league_id2'] = (int) $filters['league'];
+            } else {
+                $slug = strtolower(trim((string) $filters['league']));
+                $where[] = '(l.slug = :league_slug OR s.slug = :sport_slug)';
+                $params['league_slug'] = $slug;
+                $params['sport_slug'] = $slug;
+            }
+        }
         if (isset($filters['active']) && $filters['active'] !== '') {
             $where[] = 'e.is_active = :active';
             $params['active'] = (int) $filters['active'];
         }
+        if (!empty($filters['date'])) {
+            $where[] = 'DATE(COALESCE(e.start_time, e.event_at)) = :dt';
+            $params['dt'] = $filters['date'];
+        }
 
         $whereSql = implode(' AND ', $where);
         $total = (int) $this->db->fetchColumn(
-            "SELECT COUNT(*) FROM events e WHERE {$whereSql}",
+            "SELECT COUNT(*)
+             FROM events e
+             INNER JOIN sports s ON s.id = e.sport_id
+             LEFT JOIN leagues l ON l.id = e.league_id
+             WHERE {$whereSql}",
             $params
         );
         $offset = ($page - 1) * $perPage;
         $rows = $this->db->fetchAll(
-            "SELECT e.*, s.name AS sport_name, l.name AS league_name
+            "SELECT e.*, s.name AS sport_name, s.slug AS sport_slug, l.name AS league_name, l.slug AS league_slug
              FROM events e
              INNER JOIN sports s ON s.id = e.sport_id
              LEFT JOIN leagues l ON l.id = e.league_id

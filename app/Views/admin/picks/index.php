@@ -2,8 +2,12 @@
 $archived = !empty($archived);
 $q = (string) ($_GET['q'] ?? '');
 $status = (string) ($_GET['status'] ?? '');
+$league = (string) ($_GET['league'] ?? '');
+$active = (string) ($_GET['active'] ?? '');
 $lastSync = $lastSync ?? null;
 $syncedAt = $lastSync['created_at'] ?? null;
+$availableLeagues = $availableLeagues ?? [];
+$hasFilters = !empty($q) || !empty($status) || !empty($league) || $active !== '';
 ?>
 <div class="page-toolbar">
     <div>
@@ -29,18 +33,40 @@ $syncedAt = $lastSync['created_at'] ?? null;
     <a class="<?= !$archived ? 'is-active' : '' ?>" href="<?= e(url('/admin/picks' . ($q !== '' ? '?' . http_build_query(['q' => $q]) : ''))) ?>">Active</a>
     <a class="<?= $archived ? 'is-active' : '' ?>" href="<?= e(url('/admin/picks?' . http_build_query(array_filter(['view' => 'archived', 'q' => $q])))) ?>">Archived</a>
 </div>
-<form method="get" class="filter-bar admin-table-tools">
+<form method="get" class="filter-bar admin-table-tools" style="display:flex; flex-wrap:wrap; gap:0.75rem; align-items:center;">
     <?php if ($archived): ?>
         <input type="hidden" name="view" value="archived">
     <?php endif; ?>
-    <input name="q" placeholder="Search matchup, selection, ID" value="<?= e($q) ?>">
-    <select name="status">
+    <input name="q" placeholder="Search matchup, selection, or synced ID" value="<?= e($q) ?>" style="flex:1; min-width:200px;">
+
+    <select name="league" style="min-width:140px;">
+        <option value="">All Leagues</option>
+        <?php foreach ($availableLeagues as $lg): ?>
+            <?php $lgVal = (string) ($lg['slug'] ?? $lg['id']); ?>
+            <option value="<?= e($lgVal) ?>" <?= ($league === $lgVal || $league === (string) $lg['id'] || $league === (string) $lg['slug']) ? 'selected' : '' ?>>
+                <?= e($lg['name']) ?>
+            </option>
+        <?php endforeach; ?>
+    </select>
+
+    <select name="status" style="min-width:130px;">
         <option value="">All statuses</option>
         <?php foreach (['pending','published','won','lost','push','canceled'] as $st): ?>
             <option value="<?= e($st) ?>" <?= $status === $st ? 'selected' : '' ?>><?= e(pick_status_label($st)) ?></option>
         <?php endforeach; ?>
     </select>
+
+    <select name="active" style="min-width:120px;">
+        <option value="">All visibility</option>
+        <option value="1" <?= $active === '1' ? 'selected' : '' ?>>Active</option>
+        <option value="0" <?= $active === '0' ? 'selected' : '' ?>>Hidden</option>
+    </select>
+
     <button class="btn btn-primary" type="submit">Search</button>
+
+    <?php if ($hasFilters): ?>
+        <a href="<?= e(url('/admin/picks' . ($archived ? '?view=archived' : ''))) ?>" class="btn btn-ghost" style="color:var(--color-text-muted);">Clear filters</a>
+    <?php endif; ?>
 </form>
 <?php if (!$picks): ?>
     <?= component('empty-state', [

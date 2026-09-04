@@ -9,14 +9,17 @@
   --bone: #EAE6DC;
   --dim: #A8A499;
   --graph: #8A9099;
-  --win: #4CC27E;
+  --win: #10B981;
+  --loss: #EF4444;
+  --push: #3B82F6;
   --turf: #0F8C44;
-  --blue: #2050E0;
+  --blue: #3B82F6;
   --color-primary: #EAE6DC;
   --color-primary-hover: #F4F1E8;
-  --color-success: #4CC27E;
+  --color-success: #10B981;
   --color-warning: #E0B35C;
-  --color-danger: #E07A72;
+  --color-danger: #EF4444;
+  --color-push: #3B82F6;
   --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
   --radius: 2px;
   --header-h: 64px;
@@ -45,10 +48,11 @@ html[data-theme="dark"] {
   --color-border: #262B33;
   --color-primary: #EAE6DC;
   --color-primary-hover: #F4F1E8;
-  --color-success: #4CC27E;
+  --color-success: #10B981;
   --color-warning: #E0B35C;
-  --color-danger: #E07A72;
-  --color-ink: #4CC27E;
+  --color-danger: #EF4444;
+  --color-push: #3B82F6;
+  --color-ink: #10B981;
   --grain: rgba(234, 230, 220, 0.05);
   --nav-bg: rgba(11, 13, 16, 0.86);
   --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
@@ -252,9 +256,10 @@ button, a.btn, .ob-btn, .nav-toggle { touch-action: manipulation; }
 .badge { display: inline-flex; align-items: center; border: 1px solid var(--color-border); border-radius: 999px; padding: 0.15rem 0.55rem; font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; }
 .badge-accent { border-color: var(--color-primary); color: var(--color-primary); }
 .badge-demo { background: var(--color-surface-alt); }
-.badge-won { color: var(--color-success); border-color: var(--color-success); }
-.badge-lost { color: var(--color-danger); border-color: var(--color-danger); }
-.badge-push, .badge-scheduled { color: var(--color-warning); border-color: var(--color-warning); }
+.badge-won, .badge-win { color: var(--color-success); border-color: var(--color-success); background: rgba(16, 185, 129, 0.12); }
+.badge-lost, .badge-loss { color: var(--color-danger); border-color: var(--color-danger); background: rgba(239, 68, 68, 0.12); }
+.badge-push, .badge-pushed { color: var(--color-push); border-color: var(--color-push); background: rgba(59, 130, 246, 0.12); }
+.badge-scheduled { color: var(--color-warning); border-color: var(--color-warning); }
 
 .pick-card h3 { font-size: 1.35rem; margin: 0.6rem 0 0.35rem; }
 .pick-card h3 a { text-decoration: none; }

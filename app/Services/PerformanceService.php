@@ -13,7 +13,7 @@ final class PerformanceService
     }
 
     /**
-     * Get available active leagues from database or pick history.
+     * Get available active leagues from database, pick history, or events.
      *
      * @return array<int, array<string, mixed>>
      */
@@ -23,8 +23,9 @@ final class PerformanceService
             $leagues = $this->db->fetchAll(
                 'SELECT DISTINCT l.id, l.name, l.slug
                  FROM leagues l
-                 INNER JOIN picks p ON p.league_id = l.id
-                 WHERE p.deleted_at IS NULL
+                 LEFT JOIN picks p ON (p.league_id = l.id OR p.league = l.slug)
+                 LEFT JOIN events e ON (e.league_id = l.id)
+                 WHERE l.is_active = 1 OR p.id IS NOT NULL OR e.id IS NOT NULL
                  ORDER BY l.name ASC'
             );
             if (!empty($leagues)) {
@@ -40,18 +41,18 @@ final class PerformanceService
     }
 
     /**
-     * Get available distinct season years from pick history.
+     * Get available distinct season years from pick history or events.
      *
      * @return array<int, int>
      */
     public function getAvailableSeasons(): array
     {
         $rows = $this->db->fetchAll(
-            'SELECT DISTINCT YEAR(COALESCE(pr.recorded_at, p.updated_at, p.published_at)) AS season_year
+            'SELECT DISTINCT YEAR(COALESCE(pr.recorded_at, p.updated_at, p.published_at, e.start_time, e.event_at)) AS season_year
              FROM picks p
              LEFT JOIN pick_results pr ON pr.pick_id = p.id
+             LEFT JOIN events e ON e.id = p.event_id
              WHERE p.deleted_at IS NULL
-               AND (pr.recorded_at IS NOT NULL OR p.published_at IS NOT NULL)
              ORDER BY season_year DESC'
         );
 
@@ -99,13 +100,9 @@ final class PerformanceService
         }
 
         if (!empty($league)) {
-            if (is_numeric($league)) {
-                $where[] = 'p.league_id = :league_id';
-                $params['league_id'] = (int) $league;
-            } else {
-                $where[] = 'l.slug = :league_slug';
-                $params['league_slug'] = $league;
-            }
+            [$leagueClause, $leagueParams] = $this->resolveLeagueFilter((string) $league);
+            $where[] = $leagueClause;
+            $params = array_merge($params, $leagueParams);
         }
 
         $whereSql = implode(' AND ', $where);
@@ -127,26 +124,31 @@ final class PerformanceService
              FROM picks p
              LEFT JOIN pick_results pr ON pr.pick_id = p.id
              LEFT JOIN leagues l ON l.id = p.league_id
+             LEFT JOIN sports s ON s.id = p.sport_id
              WHERE {$whereSql}",
             $params
         ) ?? [];
 
-        $decided = (int) ($row['wins'] ?? 0) + (int) ($row['losses'] ?? 0);
-        $winRate = $decided > 0 ? round(((int) $row['wins'] / $decided) * 100, 2) : 0.0;
-        $units = (float) ($row['units'] ?? 0);
-        $roi = $decided > 0 ? round(($units / $decided) * 100, 2) : 0.0;
+        $total = (int) ($cached['total_bets'] ?? $row['total'] ?? 0);
+        $wins = (int) ($cached['wins'] ?? $row['wins'] ?? 0);
+        $losses = (int) ($cached['losses'] ?? $row['losses'] ?? 0);
+        $pushes = (int) ($cached['pushes'] ?? $row['pushes'] ?? 0);
+        $decided = $wins + $losses;
+        $winRate = $decided > 0 ? round(($wins / $decided) * 100, 2) : (float) ($cached['win_rate'] ?? 0.0);
+        $units = (float) ($cached['units_won'] ?? $row['units'] ?? 0);
+        $roi = $decided > 0 ? round(($units / $decided) * 100, 2) : (float) ($cached['roi_pct'] ?? 0.0);
 
         $streaks = $this->streaks($whereSql, $params);
-        $isDemo = empty($cached['synced_at']);
+        $isDemo = empty($cached['synced_at']) && $total === 0;
 
         return [
-            'total' => (int) ($cached['total_bets'] ?? $row['total'] ?? 0),
-            'wins' => (int) ($cached['wins'] ?? $row['wins'] ?? 0),
-            'losses' => (int) ($cached['losses'] ?? $row['losses'] ?? 0),
-            'pushes' => (int) ($cached['pushes'] ?? $row['pushes'] ?? 0),
-            'win_rate' => (float) ($cached['win_rate'] ?? $winRate),
-            'units' => (float) ($cached['units_won'] ?? $units),
-            'roi' => (float) ($cached['roi_pct'] ?? $roi),
+            'total' => $total,
+            'wins' => $wins,
+            'losses' => $losses,
+            'pushes' => $pushes,
+            'win_rate' => $winRate,
+            'units' => $units,
+            'roi' => $roi,
             'avg_confidence' => round((float) ($row['avg_confidence'] ?? 0), 1),
             'current_streak' => $streaks['current'],
             'best_streak' => $streaks['best'],
@@ -183,25 +185,24 @@ final class PerformanceService
         }
 
         if (!empty($league)) {
-            if (is_numeric($league)) {
-                $where[] = 'p.league_id = :league_id';
-                $params['league_id'] = (int) $league;
-            } else {
-                $where[] = 'l.slug = :league_slug';
-                $params['league_slug'] = $league;
-            }
+            [$leagueClause, $leagueParams] = $this->resolveLeagueFilter((string) $league);
+            $where[] = $leagueClause;
+            $params = array_merge($params, $leagueParams);
         }
 
         $whereSql = implode(' AND ', $where);
 
         $rows = $this->db->fetchAll(
             "SELECT DATE(COALESCE(pr.recorded_at, p.published_at, p.created_at)) AS d,
-                    pr.result, pr.units, s.name AS sport, l.name AS league
-             FROM pick_results pr
-             INNER JOIN picks p ON p.id = pr.pick_id
-             INNER JOIN sports s ON s.id = p.sport_id
+                    COALESCE(pr.result, p.status) AS result,
+                    COALESCE(pr.units, CASE WHEN p.status = 'won' THEN COALESCE(p.units, 0) WHEN p.status = 'lost' THEN -COALESCE(p.units, 0) ELSE 0 END) AS units,
+                    COALESCE(s.name, UPPER(p.sport), 'Other') AS sport,
+                    COALESCE(l.name, UPPER(p.league), 'Other') AS league
+             FROM picks p
+             LEFT JOIN pick_results pr ON pr.pick_id = p.id
+             LEFT JOIN sports s ON s.id = p.sport_id
              LEFT JOIN leagues l ON l.id = p.league_id
-             WHERE {$whereSql}
+             WHERE {$whereSql} AND (p.status IN ('won','lost','push') OR pr.result IN ('won','lost','push'))
              ORDER BY COALESCE(pr.recorded_at, p.published_at, p.created_at) ASC",
             $params
         );
@@ -240,18 +241,51 @@ final class PerformanceService
             'distribution' => $wl,
             'sports' => $sports,
             'leagues' => $leagues,
-            'demo' => (empty($season) && empty($league)) ? ($this->cached($range) === []) : true,
+            'demo' => (empty($season) && empty($league)) ? ($this->cached($range) === [] && $rows === []) : ($rows === []),
         ];
+    }
+
+    private function resolveLeagueFilter(string $league): array
+    {
+        $leagueRow = null;
+        if (is_numeric($league)) {
+            $leagueRow = $this->db->fetch('SELECT id, slug FROM leagues WHERE id = :id LIMIT 1', ['id' => (int) $league]);
+        }
+        if (!$leagueRow) {
+            $leagueRow = $this->db->fetch('SELECT id, slug FROM leagues WHERE slug = :slug LIMIT 1', ['slug' => strtolower(trim($league))]);
+        }
+
+        if ($leagueRow) {
+            $clause = '(p.league_id = :lid1 OR p.league = :lslug1 OR l.id = :lid2 OR l.slug = :lslug2 OR s.slug = :lslug3)';
+            $params = [
+                'lid1' => (int) $leagueRow['id'],
+                'lslug1' => (string) $leagueRow['slug'],
+                'lid2' => (int) $leagueRow['id'],
+                'lslug2' => (string) $leagueRow['slug'],
+                'lslug3' => (string) $leagueRow['slug'],
+            ];
+        } else {
+            $clause = '(p.league_id = :league_val OR p.league = :league_str1 OR l.slug = :league_str2 OR s.slug = :league_str3)';
+            $params = [
+                'league_val' => is_numeric($league) ? (int) $league : 0,
+                'league_str1' => strtolower(trim($league)),
+                'league_str2' => strtolower(trim($league)),
+                'league_str3' => strtolower(trim($league)),
+            ];
+        }
+
+        return [$clause, $params];
     }
 
     private function streaks(string $whereSql, array $params): array
     {
         $results = $this->db->fetchAll(
-            "SELECT pr.result FROM pick_results pr
-             INNER JOIN picks p ON p.id = pr.pick_id
+            "SELECT COALESCE(pr.result, p.status) AS result FROM picks p
+             LEFT JOIN pick_results pr ON pr.pick_id = p.id
              LEFT JOIN leagues l ON l.id = p.league_id
-             WHERE {$whereSql} AND pr.result IN ('won','lost')
-             ORDER BY pr.recorded_at ASC",
+             LEFT JOIN sports s ON s.id = p.sport_id
+             WHERE {$whereSql} AND (pr.result IN ('won','lost') OR p.status IN ('won','lost'))
+             ORDER BY COALESCE(pr.recorded_at, p.published_at, p.created_at) ASC",
             $params
         );
 

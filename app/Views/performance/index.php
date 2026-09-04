@@ -29,8 +29,8 @@
                     <select name="league" id="filter-league" class="filter-select" onchange="this.form.submit()">
                         <option value="">All Leagues</option>
                         <?php foreach ($availableLeagues as $lg): ?>
-                            <?php $val = (string)($lg['id'] ?? $lg['slug']); ?>
-                            <option value="<?= e($val) ?>" <?= ((string)$league === $val || (string)$league === (string)($lg['slug'] ?? '')) ? 'selected' : '' ?>>
+                            <?php $val = (string)($lg['slug'] ?? $lg['id']); ?>
+                            <option value="<?= e($val) ?>" <?= ((string)$league === $val || (string)$league === (string)($lg['id'] ?? '') || (string)$league === (string)($lg['slug'] ?? '')) ? 'selected' : '' ?>>
                                 <?= e($lg['name']) ?>
                             </option>
                         <?php endforeach; ?>
@@ -46,11 +46,11 @@
         <div class="stat-grid five">
             <?= component('stat-card', ['label' => 'Notes graded', 'value' => (string) $stats['total']]) ?>
             <?= component('stat-card', ['label' => 'Win rate', 'value' => $stats['win_rate'] . '%']) ?>
-            <?= component('stat-card', ['label' => 'ROI', 'value' => $stats['roi'] . '%']) ?>
-            <?= component('stat-card', ['label' => 'Units', 'value' => (string) $stats['units']]) ?>
+            <?= component('stat-card', ['label' => 'ROI', 'value' => ($stats['roi'] > 0 ? '+' : '') . $stats['roi'] . '%']) ?>
+            <?= component('stat-card', ['label' => 'Units', 'value' => ($stats['units'] > 0 ? '+' : '') . $stats['units'] . 'u']) ?>
             <?= component('stat-card', ['label' => 'Avg confidence', 'value' => (string) $stats['avg_confidence']]) ?>
-            <?= component('stat-card', ['label' => 'Current streak', 'value' => (string) $stats['current_streak']]) ?>
-            <?= component('stat-card', ['label' => 'Best streak', 'value' => (string) $stats['best_streak']]) ?>
+            <?= component('stat-card', ['label' => 'Current streak', 'value' => $stats['current_streak'] > 0 ? 'W' . $stats['current_streak'] : ($stats['current_streak'] < 0 ? 'L' . abs((int)$stats['current_streak']) : '0')]) ?>
+            <?= component('stat-card', ['label' => 'Best streak', 'value' => 'W' . $stats['best_streak']]) ?>
         </div>
         <div class="chart-grid" style="margin-top:1.5rem;">
             <div class="panel chart-card"><h3>Cumulative performance</h3><canvas id="chart-cumulative"></canvas></div>

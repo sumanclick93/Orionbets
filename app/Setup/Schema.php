@@ -373,6 +373,24 @@ final class Schema
         }
 
         self::ensureActionNetworkCatalog($db);
+
+        if ($db->tableExists('picks') && $db->tableExists('leagues')) {
+            try {
+                $db->pdo()->exec(
+                    "UPDATE picks p
+                     INNER JOIN leagues l ON l.id = p.league_id
+                     SET p.league = l.slug
+                     WHERE (p.league IS NULL OR p.league = '') AND p.league_id IS NOT NULL"
+                );
+                $db->pdo()->exec(
+                    "UPDATE picks p
+                     INNER JOIN leagues l ON l.slug = p.league
+                     SET p.league_id = l.id
+                     WHERE p.league_id IS NULL AND p.league IS NOT NULL AND p.league <> ''"
+                );
+            } catch (Throwable) {
+            }
+        }
     }
 
     private static function ensureActionNetworkCatalog(Database $db): void
