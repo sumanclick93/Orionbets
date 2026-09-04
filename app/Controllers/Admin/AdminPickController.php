@@ -20,6 +20,8 @@ final class AdminPickController extends Controller
     public function index(): string
     {
         $archived = $this->request->query('view', '') === 'archived';
+        $perPageQuery = (string) $this->request->query('per_page', '10');
+        $perPage = strtolower($perPageQuery) === 'all' ? 10000 : max(1, (int) $perPageQuery);
         $filters = [
             'q' => (string) $this->request->query('q', ''),
             'status' => (string) $this->request->query('status', ''),
@@ -29,7 +31,7 @@ final class AdminPickController extends Controller
             'archived' => $archived,
         ];
 
-        $result = (new PickRepository($this->db))->search($filters, max(1, (int) $this->request->query('page', 1)), 50);
+        $result = (new PickRepository($this->db))->search($filters, max(1, (int) $this->request->query('page', 1)), $perPage);
         $perfService = new \App\Services\PerformanceService($this->db);
 
         return $this->view('admin/picks/index', [
@@ -37,6 +39,8 @@ final class AdminPickController extends Controller
             'picks' => $result['data'],
             'total' => $result['total'],
             'page' => $result['page'],
+            'perPage' => $perPageQuery,
+            'perPageNum' => $perPage,
             'archived' => $archived,
             'filters' => $filters,
             'availableLeagues' => $perfService->getAvailableLeagues(),

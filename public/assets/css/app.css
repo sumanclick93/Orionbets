@@ -459,7 +459,7 @@ input.is-locked {
 .empty-state { text-align: center; padding: 2.5rem 1rem; border: 1px dashed var(--color-border); border-radius: var(--radius); }
 .pagination { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 1.5rem; }
 .pagination a { min-width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid var(--color-border); border-radius: 8px; text-decoration: none; }
-.pagination a.is-active { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+.pagination a.is-active { background: var(--color-text); color: var(--color-background); border-color: var(--color-text); font-weight: 600; }
 
 .range-tabs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 1rem 0 1.5rem; }
 .range-tabs a { padding: 0.4rem 0.8rem; border-radius: 999px; border: 1px solid var(--color-border); text-decoration: none; font-size: 0.85rem; }
@@ -2265,5 +2265,49 @@ html.cookie-pending body.is-legal-read main { padding-bottom: max(14rem, calc(11
 @media (max-width: 640px) {
   .ef-admin__actions .btn { width: 100%; }
   .ef-admin__filter-submit .btn { width: 100%; }
+}
+
+.admin-filter-row {
+  display: flex !important;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 0.6rem;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 1.25rem;
+}
+.admin-filter-row input,
+.admin-filter-row select,
+.admin-filter-row .btn {
+  height: 42px;
+  min-height: 42px;
+  box-sizing: border-box;
+}
+.admin-filter-row input[name="q"] {
+  flex: 1 1 auto !important;
+  min-width: 180px;
+  width: auto !important;
+}
+.admin-filter-row select {
+  flex: 0 0 auto !important;
+  width: auto !important;
+}
+.admin-filter-row .btn {
+  flex: 0 0 auto !important;
+  white-space: nowrap;
+}
+@media (max-width: 768px) {
+  .admin-filter-row {
+    flex-wrap: wrap !important;
+  }
+  .admin-filter-row input[name="q"] {
+    flex: 1 1 100% !important;
+  }
+  .admin-filter-row select {
+    flex: 1 1 calc(50% - 0.3rem) !important;
+  }
+  .admin-filter-row .btn {
+    flex: 1 1 auto !important;
+  }
 }
 

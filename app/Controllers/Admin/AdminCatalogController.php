@@ -12,6 +12,8 @@ final class AdminCatalogController extends Controller
 {
     public function events(): string
     {
+        $perPageQuery = (string) $this->request->query('per_page', '10');
+        $perPage = strtolower($perPageQuery) === 'all' ? 10000 : max(1, (int) $perPageQuery);
         $filters = [
             'q' => (string) $this->request->query('q', ''),
             'status' => (string) $this->request->query('status', ''),
@@ -20,7 +22,7 @@ final class AdminCatalogController extends Controller
             'date' => (string) $this->request->query('date', ''),
         ];
 
-        $result = (new EventRepository($this->db))->search($filters, max(1, (int) $this->request->query('page', 1)), 50);
+        $result = (new EventRepository($this->db))->search($filters, max(1, (int) $this->request->query('page', 1)), $perPage);
         $perfService = new \App\Services\PerformanceService($this->db);
 
         return $this->view('admin/events/index', [
@@ -28,6 +30,8 @@ final class AdminCatalogController extends Controller
             'events' => $result['data'],
             'total' => $result['total'],
             'page' => $result['page'],
+            'perPage' => $perPageQuery,
+            'perPageNum' => $perPage,
             'filters' => $filters,
             'availableLeagues' => $perfService->getAvailableLeagues(),
             'lastSync' => \App\Services\ActionNetworkService::make($this->db)->lastSync('scoreboard'),
