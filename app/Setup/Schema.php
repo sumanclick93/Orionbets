@@ -279,7 +279,11 @@ final class Schema
             self::addColumn($db, 'picks', 'bet_type', '`bet_type` VARCHAR(40) NULL');
             self::addColumn($db, 'picks', 'selection_line', '`selection_line` VARCHAR(120) NULL');
             self::addColumn($db, 'picks', 'odds', '`odds` VARCHAR(20) NULL');
-            self::addColumn($db, 'picks', 'units', '`units` DECIMAL(5,2) NULL');
+            self::addColumn($db, 'picks', 'units', '`units` DECIMAL(10,2) NULL');
+            try {
+                $db->pdo()->exec('ALTER TABLE picks MODIFY units DECIMAL(10,2) NULL');
+            } catch (Throwable) {
+            }
             self::addColumn($db, 'picks', 'sportsbook', '`sportsbook` VARCHAR(80) NULL');
             self::addColumn($db, 'picks', 'is_published', '`is_published` TINYINT(1) NOT NULL DEFAULT 1');
             self::addColumn($db, 'picks', 'is_active', '`is_active` TINYINT(1) NOT NULL DEFAULT 1');
