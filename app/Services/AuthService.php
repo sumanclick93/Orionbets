@@ -77,6 +77,16 @@ final class AuthService
         ]);
         $this->mailer->send($user['email'], 'Welcome to Orion Bets', 'welcome', ['user' => $user]);
 
+        try {
+            (new BeehiivService())->subscribeAndSendWelcome(
+                (string) ($user['email'] ?? ''),
+                (string) ($user['first_name'] ?? ''),
+                (string) ($user['last_name'] ?? '')
+            );
+        } catch (\Throwable $e) {
+            Logger::error('Beehiiv registration trigger exception', ['error' => $e->getMessage()]);
+        }
+
         $this->audit->log($id, 'registration', 'user', (string) $id, $request);
 
         return ['ok' => true, 'claimed' => false, 'user' => $user];
@@ -349,6 +359,16 @@ final class AuthService
             $this->seedPreferences($id);
             $user = $this->users->findById($id);
             $created = true;
+
+            try {
+                (new BeehiivService())->subscribeAndSendWelcome(
+                    (string) ($user['email'] ?? ''),
+                    (string) ($user['first_name'] ?? ''),
+                    (string) ($user['last_name'] ?? '')
+                );
+            } catch (\Throwable $e) {
+                Logger::error('Beehiiv Discord OAuth registration trigger exception', ['error' => $e->getMessage()]);
+            }
         }
 
         if (!$user || (int) ($user['is_active'] ?? 0) !== 1) {

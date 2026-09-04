@@ -683,6 +683,29 @@ final class CheckoutService
             ? (float) $order['total']
             : ((int) ($plan['price_cents'] ?? 0) / 100);
 
+        try {
+            $customerName = trim(($fresh['first_name'] ?? '') . ' ' . ($fresh['last_name'] ?? ''));
+            if ($customerName === '') {
+                $customerName = $name !== '' ? $name : 'Member';
+            }
+            $paymentMethodName = $provider === 'paypal' ? 'PayPal' : 'Upgrade.Chat';
+            $receiptOrderRef = $orderId !== '' ? $orderId : ($txnId !== '' ? $txnId : 'ord_' . bin2hex(random_bytes(6)));
+
+            $this->mailer->send($email, 'Your Orion Bets Receipt — Order #' . $receiptOrderRef, 'receipt', [
+                'customerName' => $customerName,
+                'orderId' => $receiptOrderRef,
+                'planName' => $plan['name'] ?? 'Membership Plan',
+                'amount' => $amount,
+                'currency' => strtoupper((string) ($order['currency'] ?? $plan['currency'] ?? 'USD')),
+                'date' => date('F j, Y'),
+                'paymentMethod' => $paymentMethodName,
+                'billingInterval' => $plan['billing_interval'] ?? 'month',
+                'user' => $fresh,
+            ]);
+        } catch (\Throwable $e) {
+            Logger::error('Failed to send transactional receipt email', ['error' => $e->getMessage()]);
+        }
+
         return [
             'user' => $fresh,
             'plan' => $plan,
