@@ -12,21 +12,7 @@ $hasFilters = !empty($q) || !empty($status) || !empty($league) || $active !== ''
 <div class="page-toolbar">
     <div>
         <p class="kicker">Playbook</p>
-        <h2>Synced picks</h2>
-        <p class="muted admin-hint">Action Network is the source of record. Hide a pick from the site or override the line without breaking the synced ID.</p>
-        <?php if ($syncedAt): ?>
-            <span class="sync-badge <?= ($lastSync['status'] ?? '') === 'failed' ? 'is-failed' : 'is-ok' ?>">Last sync <?= e(format_datetime($syncedAt)) ?></span>
-        <?php else: ?>
-            <span class="sync-badge">Never synced</span>
-        <?php endif; ?>
-    </div>
-    <div class="page-toolbar__actions">
-        <form method="post" action="<?= e(url('/admin/sync/action-network')) ?>" data-an-sync="live">
-            <?= csrf_field() ?>
-            <button class="btn btn-primary" type="submit">Sync Action Network Now</button>
-        </form>
-        <span class="sync-badge" data-an-sync-hint hidden></span>
-        <a class="btn btn-ghost" href="<?= e(url('/admin/sync')) ?>">Sync logs</a>
+        <h2>Picks</h2>
     </div>
 </div>
 <div class="range-tabs">
