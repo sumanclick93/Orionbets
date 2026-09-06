@@ -10,7 +10,7 @@ use Throwable;
 final class ActionNetworkJobService
 {
     private const STALE_SECONDS = 120;
-    private const MAX_PICK_PAGES = 40;
+    private const MAX_PICK_PAGES = 60;
 
     public function __construct(private Database $db, private ActionNetworkService $network)
     {

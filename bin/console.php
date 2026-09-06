@@ -49,7 +49,11 @@ switch ($command) {
         echo "Backfilling {$days} day(s) from Action Network...\n";
         $result = ActionNetworkService::make($app->db)->backfillHistorical($days, 'backfill');
         echo $result['ok'] ? "Backfill complete.\n" : "Backfill finished with errors.\n";
-        echo 'Records upserted: ' . (int) $result['items'] . PHP_EOL;
+        echo 'Records upserted: ' . (int) $result['items'];
+        if (isset($result['inserted']) || isset($result['updated'])) {
+            echo ' (Inserted: ' . (int) ($result['inserted'] ?? 0) . ', Updated: ' . (int) ($result['updated'] ?? 0) . ')';
+        }
+        echo PHP_EOL;
         foreach ($result['errors'] as $error) {
             fwrite(STDERR, $error . PHP_EOL);
         }

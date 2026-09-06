@@ -18,8 +18,8 @@ final class ActionNetworkService
 
     private const TIMEOUT = 20;
     private const CONNECT_TIMEOUT = 8;
-    private const PACE_MICROSECONDS = 180000;
-    private const MAX_PICK_PAGES = 40;
+    private const PACE_MICROSECONDS = 150000;
+    private const MAX_PICK_PAGES = 60;
 
     public function __construct(private Database $db)
     {
@@ -147,7 +147,7 @@ final class ActionNetworkService
     }
 
     /**
-     * @return array{ok:bool,items:int,error:?string,endpoint:string}
+     * @return array{ok:bool,items:int,inserted:int,updated:int,error:?string,endpoint:string}
      */
     public function syncPicks(int $page = 1, int $limit = 50, string $syncType = 'cron', bool $allPages = false): array
     {
@@ -155,12 +155,14 @@ final class ActionNetworkService
         if ($cfg['user_id'] === '') {
             $msg = 'ACTION_NETWORK_USER_ID is not set.';
             $this->logSync('/users/{user_id}/picks', $syncType, 0, false, $msg);
-            return ['ok' => false, 'items' => 0, 'error' => $msg, 'endpoint' => 'picks'];
+            return ['ok' => false, 'items' => 0, 'inserted' => 0, 'updated' => 0, 'error' => $msg, 'endpoint' => 'picks'];
         }
 
         $page = max(1, $page);
         $limit = max(1, min(100, $limit));
         $synced = 0;
+        $insertedCount = 0;
+        $updatedCount = 0;
         $lastError = null;
         $pages = $allPages ? self::MAX_PICK_PAGES : 1;
 
@@ -181,7 +183,12 @@ final class ActionNetworkService
 
             $count = 0;
             foreach ($picks as $pick) {
-                if ($this->upsertPick($pick) > 0) {
+                $res = $this->upsertPick($pick);
+                if (!empty($res['inserted'])) {
+                    $insertedCount++;
+                    $count++;
+                } elseif (!empty($res['updated'])) {
+                    $updatedCount++;
                     $count++;
                 }
             }
@@ -196,6 +203,8 @@ final class ActionNetworkService
         return [
             'ok' => $lastError === null || $synced > 0,
             'items' => $synced,
+            'inserted' => $insertedCount,
+            'updated' => $updatedCount,
             'error' => $synced === 0 ? $lastError : null,
             'endpoint' => 'picks',
         ];
@@ -488,7 +497,7 @@ final class ActionNetworkService
     }
 
     /**
-     * @return array{ok:bool,items:int,errors:list<string>}
+     * @return array{ok:bool,items:int,inserted:int,updated:int,picks_synced:int,errors:list<string>}
      */
     public function backfillHistorical(int $daysBack = 365, string $syncType = 'backfill'): array
     {
@@ -496,7 +505,16 @@ final class ActionNetworkService
         $items = 0;
         $errors = [];
 
-        for ($offset = $daysBack; $offset >= 0; $offset--) {
+        // 1. Fetch all user pick pages (up to MAX_PICK_PAGES)
+        $picks = $this->syncPicks(1, 50, $syncType, true);
+        $items += (int) ($picks['items'] ?? 0);
+        if (!empty($picks['error'])) {
+            $errors[] = (string) $picks['error'];
+        }
+
+        // 2. Scan recent scoreboard dates (last 14 days)
+        $scoreboardDays = min(14, $daysBack);
+        for ($offset = $scoreboardDays; $offset >= 0; $offset--) {
             $date = date('Ymd', strtotime('-' . $offset . ' days'));
             $result = $this->syncScoreboard($date, $syncType);
             $items += (int) ($result['items'] ?? 0);
@@ -505,12 +523,7 @@ final class ActionNetworkService
             }
         }
 
-        $picks = $this->syncPicks(1, 50, $syncType, true);
-        $items += (int) ($picks['items'] ?? 0);
-        if (!empty($picks['error'])) {
-            $errors[] = (string) $picks['error'];
-        }
-
+        // 3. Refresh performance metrics & calculate aggregate totals
         $metrics = $this->syncPerformance($syncType);
         $items += (int) ($metrics['items'] ?? 0);
         if (!empty($metrics['error'])) {
@@ -520,6 +533,9 @@ final class ActionNetworkService
         return [
             'ok' => $errors === [] || $items > 0,
             'items' => $items,
+            'inserted' => (int) ($picks['inserted'] ?? 0),
+            'updated' => (int) ($picks['updated'] ?? 0),
+            'picks_synced' => (int) ($picks['items'] ?? 0),
             'errors' => $errors,
         ];
     }
@@ -539,9 +555,13 @@ final class ActionNetworkService
             return ['ok' => false, 'status' => 0, 'data' => [], 'error' => 'PHP cURL extension is required.', 'url' => $url];
         }
 
+        $ua = str_contains($url, '/mobile/')
+            ? 'ActionNetwork/3.0.0 (com.actionnetwork.app; build:1; iOS 16.0.0) Alamofire/5.4.0'
+            : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
+
         $headers = [
             'Accept: application/json',
-            'User-Agent: Mozilla/5.0 (compatible; OrionBets/1.0; +https://orionbets.co)',
+            'User-Agent: ' . $ua,
             'Referer: https://www.actionnetwork.com/',
             'Origin: https://www.actionnetwork.com',
         ];
@@ -616,17 +636,23 @@ final class ActionNetworkService
      */
     private function fetchPicksPage(string $userId, int $page, int $limit): array
     {
+        $mobileBase = 'https://api.actionnetwork.com/mobile/v1';
+        $webBase = 'https://api.actionnetwork.com/web/v1';
         $paths = [
-            ['/users/' . rawurlencode($userId) . '/picks', ['page' => $page, 'limit' => $limit]],
-            ['/users/' . rawurlencode($userId) . '/playbook', ['page' => $page, 'limit' => $limit]],
-            ['/users/' . rawurlencode($userId), ['include' => 'picks', 'page' => $page, 'limit' => $limit]],
+            ['/users/' . rawurlencode($userId) . '/picks', ['page' => $page, 'limit' => $limit], $webBase],
+            ['/users/' . rawurlencode($userId) . '/picks', ['page' => $page, 'limit' => $limit], $mobileBase],
+            ['/users/' . rawurlencode($userId) . '/playbook', ['page' => $page, 'limit' => $limit], $webBase],
+            ['/users/' . rawurlencode($userId), ['include' => 'picks', 'page' => $page, 'limit' => $limit], $webBase],
         ];
 
         $last = ['ok' => false, 'status' => 0, 'data' => [], 'error' => 'No picks endpoint responded.', 'url' => ''];
-        foreach ($paths as [$path, $query]) {
-            $response = $this->get($path, $query);
+        foreach ($paths as [$path, $query, $base]) {
+            $response = $this->get($path, $query, $base);
             if ($response['ok']) {
-                return $response;
+                $picks = $this->extractPicks($response['data']);
+                if ($picks !== []) {
+                    return $response;
+                }
             }
             $last = $response;
         }
@@ -1045,8 +1071,9 @@ final class ActionNetworkService
 
     /**
      * @param array<string,mixed> $pick
+     * @return array{inserted:bool,updated:bool,id:int}
      */
-    private function upsertPick(array $pick): int
+    private function upsertPick(array $pick): array
     {
         $anId = (string) $pick['id'];
         $existing = $this->db->fetch(
@@ -1054,16 +1081,17 @@ final class ActionNetworkService
             ['id' => $anId]
         );
 
-        $leagueSlug = strtolower((string) ($pick['league'] !== '' ? $pick['league'] : $pick['sport']));
-        $catalog = $this->resolveCatalog($leagueSlug, (string) $pick['sport']);
-        $eventId = $this->localEventId((string) $pick['event_id']);
-        $matchup = trim((string) $pick['matchup']);
+        $leagueRaw = (string) ($pick['league'] ?? $pick['league_name'] ?? $pick['sport'] ?? '');
+        $leagueSlug = strtolower(trim($leagueRaw !== '' ? $leagueRaw : (string) ($pick['sport'] ?? '')));
+        $catalog = $this->resolveCatalog($leagueSlug, (string) ($pick['sport'] ?? ''));
+        $eventId = $this->localEventId((string) ($pick['event_id'] ?? $pick['game_id'] ?? ''));
+        $matchup = trim((string) ($pick['matchup'] ?? ''));
         if ($matchup === '') {
             $matchup = 'Playbook pick';
         }
-        $title = trim($matchup . ' · ' . (string) $pick['selection_line']);
-        $analysis = trim((string) $pick['analysis']);
-        $status = (string) $pick['status'];
+        $title = trim($matchup . ' · ' . (string) ($pick['selection_line'] ?? ''));
+        $analysis = trim((string) ($pick['analysis'] ?? ''));
+        $status = (string) ($pick['status'] ?? 'pending');
 
         $core = [
             'action_network_pick_id' => $anId,
@@ -1073,11 +1101,11 @@ final class ActionNetworkService
             'sport' => $catalog['sport_slug'],
             'league' => $catalog['league_slug'],
             'matchup' => $matchup,
-            'bet_type' => $pick['bet_type'],
-            'selection_line' => $pick['selection_line'],
-            'odds' => $pick['odds'],
-            'units' => $pick['units'],
-            'sportsbook' => $pick['sportsbook'],
+            'bet_type' => $pick['bet_type'] ?? 'spread',
+            'selection_line' => $pick['selection_line'] ?? '',
+            'odds' => $pick['odds'] ?? null,
+            'units' => $pick['units'] ?? 1.00,
+            'sportsbook' => $pick['sportsbook'] ?? null,
             'status' => $status,
             'title' => mb_substr($title !== ' · ' ? $title : $matchup, 0, 190),
         ];
@@ -1098,7 +1126,7 @@ final class ActionNetworkService
             }
             $this->db->update('picks', $update, 'id = :id', ['id' => $existing['id']]);
             $this->syncPickResult((int) $existing['id'], $core['status'], (float) ($pick['result_units'] ?? 0), $analysis);
-            return 1;
+            return ['inserted' => false, 'updated' => true, 'id' => (int) $existing['id']];
         }
 
         $slug = $this->uniqueSlug($matchup . '-' . $anId);
@@ -1116,7 +1144,7 @@ final class ActionNetworkService
         ];
         $id = $this->db->insert('picks', $insert);
         $this->syncPickResult($id, $core['status'], (float) ($pick['result_units'] ?? 0), $analysis);
-        return 1;
+        return ['inserted' => true, 'updated' => false, 'id' => $id];
     }
 
     private function syncPickResult(int $pickId, string $status, float $units, string $notes): void
