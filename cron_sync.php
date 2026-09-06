@@ -70,6 +70,10 @@ if ($isCli) {
 
 $mode = $isBackfill ? 'backfill' : 'live';
 
+// Set execution limits (unlimited for CLI & backfills)
+@set_time_limit($isCli || $isBackfill ? 0 : 300);
+@ini_set('max_execution_time', $isCli || $isBackfill ? '0' : '300');
+
 // 5. File-Based Execution Locking (TTL = 180s)
 $lockDir = $basePath . '/storage/locks';
 if (!is_dir($lockDir)) {
