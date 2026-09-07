@@ -160,5 +160,7 @@ $router->get('/admin/sync', [AdminSyncController::class, 'index'], ['auth', 'adm
 $router->get('/admin/sync/action-network/status', [AdminSyncController::class, 'status'], ['auth', 'admin', 'role:admin,super_admin']);
 $router->post('/admin/sync/action-network', [AdminSyncController::class, 'run'], ['auth', 'admin', 'csrf', 'role:admin,super_admin']);
 $router->post('/admin/sync/action-network-backfill', [AdminSyncController::class, 'backfill'], ['auth', 'admin', 'csrf', 'role:admin,super_admin']);
+$router->post('/admin/sync/rebuild-picks', [AdminSyncController::class, 'rebuild'], ['auth', 'admin', 'csrf', 'role:admin,super_admin']);
+$router->get('/admin/sync/rebuild-picks', [AdminSyncController::class, 'rebuild'], ['auth', 'admin', 'role:admin,super_admin']);
 $router->post('/admin/sync/action-network/tick', [AdminSyncController::class, 'tick'], ['auth', 'admin', 'csrf', 'role:admin,super_admin']);
 $router->post('/admin/sync/action-network/pause', [AdminSyncController::class, 'pause'], ['auth', 'admin', 'csrf', 'role:admin,super_admin']);

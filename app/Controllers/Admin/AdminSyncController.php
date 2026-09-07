@@ -36,6 +36,38 @@ final class AdminSyncController extends Controller
         $this->startJob('backfill', $days);
     }
 
+    public function rebuild(): never
+    {
+        @set_time_limit(600);
+        $service = ActionNetworkService::make($this->db);
+        $res = $service->rebuildPicks('manual_rebuild');
+
+        (new AuditService($this->db))->log(
+            $this->auth->id(),
+            'an_sync_rebuild',
+            'action_network',
+            'rebuild',
+            $this->request,
+            [
+                'items' => $res['items'] ?? 0,
+                'deleted' => $res['deleted'] ?? 0,
+                'inserted' => $res['inserted'] ?? 0,
+            ]
+        );
+
+        if ($this->request->isAjax()) {
+            $this->json($res, !empty($res['ok']) ? 200 : 422);
+        }
+
+        $this->flash(
+            !empty($res['ok']) ? 'success' : 'error',
+            !empty($res['ok'])
+                ? 'Rebuild complete! Wiped ' . (int) ($res['deleted'] ?? 0) . ' records and imported ' . (int) ($res['items'] ?? 0) . ' verified bet slips.'
+                : (string) ($res['error'] ?? 'Could not complete rebuild.')
+        );
+        $this->redirect('/admin/sync');
+    }
+
     public function tick(): never
     {
         @set_time_limit(45);

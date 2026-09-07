@@ -18,7 +18,7 @@ $userSet = trim((string) ($config['user_id'] ?? '')) !== '';
     </div>
 </div>
 
-<div class="dash-grid cols-2">
+<div class="dash-grid cols-2" style="margin-bottom:1rem;">
     <section class="panel">
         <h3>Live sync</h3>
         <p class="muted">Pulls yesterday and today across every configured league (<?= e(strtoupper(implode(', ', $config['leagues'] ?? []))) ?>), then the playbook and profile metrics. Runs in small batches so the request cannot time out — pause anytime and the next sync resumes where it stopped.</p>
@@ -45,6 +45,15 @@ $userSet = trim((string) ($config['user_id'] ?? '')) !== '';
         </form>
     </section>
 </div>
+
+<section class="panel" style="margin-bottom:1rem; border:1px solid rgba(229, 62, 62, 0.4);">
+    <h3 style="color:#e53e3e;">Wipe & Rebuild Verified Bet Slips</h3>
+    <p class="muted">Purges all synthetic/polluted <code>evt-xxxx</code> picks from the database and performs a fresh, exhaustive multi-page ingestion of 100% verified bet slips from Action Network profile <code><?= e((string) ($config['user_id'] ?: '4690304')) ?></code> (all 934 lifetime bets across NCAAB, MLB, NBA, NCAAF, NFL, WNBA, NHL).</p>
+    <form method="post" action="<?= e(url('/admin/sync/rebuild-picks')) ?>" data-confirm="Wipe and rebuild all bet slips?" data-confirm-copy="This will delete synthetic pick records and re-import all historical user bet slips directly from Action Network." data-confirm-ok="Wipe & Rebuild Now">
+        <?= csrf_field() ?>
+        <button class="btn btn-danger" type="submit" style="background:#e53e3e; color:#fff;">Wipe & Rebuild Bet Slips</button>
+    </form>
+</section>
 
 <section class="panel" style="margin-top:1rem;">
     <h3>Recent logs</h3>

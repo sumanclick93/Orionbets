@@ -230,6 +230,27 @@ final class PerformanceService
             }
         }
 
+        if ($this->db->tableExists('performance_metrics')) {
+            $metricRows = $this->db->fetchAll('SELECT * FROM performance_metrics WHERE period = "all" AND synced_at IS NOT NULL');
+            foreach ($metricRows as $m) {
+                if (empty($m['sport'])) {
+                    if (($wl['won'] ?? 0) === 0 && ($wl['lost'] ?? 0) === 0) {
+                        $wl['won'] = (int) ($m['wins'] ?? 0);
+                        $wl['lost'] = (int) ($m['losses'] ?? 0);
+                        $wl['push'] = (int) ($m['pushes'] ?? 0);
+                    }
+                } else {
+                    $sName = strtoupper((string) $m['sport']);
+                    if (!isset($sports[$sName])) {
+                        $sports[$sName] = (int) ($m['wins'] ?? $m['total_bets'] ?? 0);
+                    }
+                    if (!isset($leagues[$sName])) {
+                        $leagues[$sName] = (int) ($m['wins'] ?? $m['total_bets'] ?? 0);
+                    }
+                }
+            }
+        }
+
         $monthSeries = [];
         foreach ($monthly as $label => $value) {
             $monthSeries[] = ['label' => $label, 'units' => round($value, 2)];

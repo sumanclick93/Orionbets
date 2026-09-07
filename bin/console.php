@@ -58,6 +58,17 @@ switch ($command) {
             fwrite(STDERR, $error . PHP_EOL);
         }
         exit($result['ok'] || (int) $result['items'] > 0 ? 0 : 1);
+    case 'action-network:rebuild-picks':
+        Schema::tryEnsure($app->db);
+        echo "Wiping synthetic/cached picks and rebuilding verified bet slips...\n";
+        $result = ActionNetworkService::make($app->db)->rebuildPicks('cli_rebuild');
+        echo $result['ok'] ? "Rebuild complete.\n" : "Rebuild finished with errors.\n";
+        echo 'Records deleted: ' . (int) ($result['deleted'] ?? 0) . PHP_EOL;
+        echo 'Verified bet slips re-ingested: ' . (int) ($result['items'] ?? 0) . PHP_EOL;
+        if (!empty($result['error'])) {
+            fwrite(STDERR, $result['error'] . PHP_EOL);
+        }
+        exit($result['ok'] ? 0 : 1);
     default:
         echo "Orion Bets console\n";
         echo "  php bin/console.php migrate\n";
@@ -65,4 +76,5 @@ switch ($command) {
         echo "  php bin/console.php setup\n";
         echo "  php bin/console.php action-network:sync\n";
         echo "  php bin/console.php action-network:backfill --days=365\n";
+        echo "  php bin/console.php action-network:rebuild-picks\n";
 }
