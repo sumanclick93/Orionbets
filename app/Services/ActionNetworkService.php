@@ -21,6 +21,8 @@ final class ActionNetworkService
     private const PACE_MICROSECONDS = 150000;
     private const MAX_PICK_PAGES = 60;
 
+    private array $catalogCache = [];
+
     public function __construct(private Database $db)
     {
     }
@@ -1090,7 +1092,7 @@ final class ActionNetworkService
             'title' => mb_substr($title !== ' · ' ? $title : $matchup, 0, 190),
         ];
 
-        $pickDate = !empty($pick['created_at'])
+        $createdAt = !empty($pick['created_at'])
             ? (string) $pick['created_at']
             : (!empty($pick['published_at'])
                 ? (string) $pick['published_at']
@@ -1100,14 +1102,19 @@ final class ActionNetworkService
                         ? (string) $pick['scheduled_at']
                         : date('Y-m-d H:i:s'))));
 
+        $publishedAt = !empty($pick['published_at']) ? (string) $pick['published_at'] : $createdAt;
+        $scheduledAt = !empty($pick['scheduled_at']) ? (string) $pick['scheduled_at'] : $publishedAt;
+        $settledAt = !empty($pick['settled_at']) ? (string) $pick['settled_at'] : $publishedAt;
+        $pickDate = $createdAt;
+
         if ($existing) {
             $update = $core;
             unset($update['action_network_pick_id']);
             if (!empty($pickDate)) {
-                $update['created_at'] = $pickDate;
-                $update['published_at'] = $pickDate;
+                $update['created_at'] = $createdAt;
+                $update['published_at'] = $publishedAt;
                 if ($this->db->columnExists('picks', 'scheduled_at')) {
-                    $update['scheduled_at'] = $pickDate;
+                    $update['scheduled_at'] = $scheduledAt;
                 }
             }
             if ((int) ($existing['is_custom'] ?? 0) === 1) {
@@ -1122,7 +1129,7 @@ final class ActionNetworkService
                 }
             }
             $this->db->update('picks', $update, 'id = :id', ['id' => $existing['id']]);
-            $this->syncPickResult((int) $existing['id'], $core['status'], (float) ($pick['result_units'] ?? 0), $analysis, $pickDate);
+            $this->syncPickResult((int) $existing['id'], $core['status'], (float) ($pick['result_units'] ?? 0), $analysis, $settledAt);
             return ['inserted' => false, 'updated' => true, 'id' => (int) $existing['id']];
         }
 
@@ -1136,14 +1143,14 @@ final class ActionNetworkService
             'is_published' => 1,
             'is_active' => 1,
             'is_custom' => 0,
-            'published_at' => $pickDate,
-            'created_at' => $pickDate,
+            'published_at' => $publishedAt,
+            'created_at' => $createdAt,
         ];
         if ($this->db->columnExists('picks', 'scheduled_at')) {
-            $insert['scheduled_at'] = $pickDate;
+            $insert['scheduled_at'] = $scheduledAt;
         }
         $id = $this->db->insert('picks', $insert);
-        $this->syncPickResult($id, $core['status'], (float) ($pick['result_units'] ?? 0), $analysis, $pickDate);
+        $this->syncPickResult($id, $core['status'], (float) ($pick['result_units'] ?? 0), $analysis, $settledAt);
         return ['inserted' => true, 'updated' => false, 'id' => $id];
     }
 
@@ -1274,6 +1281,11 @@ final class ActionNetworkService
      */
     private function resolveCatalog(string $leagueSlug, string $sportHint): array
     {
+        $cacheKey = $leagueSlug . ':' . $sportHint;
+        if (isset($this->catalogCache[$cacheKey])) {
+            return $this->catalogCache[$cacheKey];
+        }
+
         $leagueSlug = strtolower(trim($leagueSlug));
         $sportSlug = strtolower(trim($sportHint));
         if ($sportSlug === '') {
@@ -1316,12 +1328,15 @@ final class ActionNetworkService
             $league = ['id' => $leagueId, 'slug' => $leagueSlug];
         }
 
-        return [
+        $res = [
             'sport_id' => (int) $sport['id'],
             'league_id' => $league ? (int) $league['id'] : null,
             'sport_slug' => (string) $sport['slug'],
             'league_slug' => $league ? (string) $league['slug'] : $leagueSlug,
         ];
+        $this->catalogCache[$cacheKey] = $res;
+
+        return $res;
     }
 
     private function sportSlugForLeague(string $league): string
@@ -1593,15 +1608,12 @@ final class ActionNetworkService
             Logger::warning('Error during picks table wipe', ['error' => $e->getMessage()]);
         }
 
-        $res = $this->syncPicks(1, 50, $syncType, true);
-        $synced = (int) ($res['items'] ?? 0);
-        $inserted = (int) ($res['inserted'] ?? 0);
-        $updated = (int) ($res['updated'] ?? 0);
-        $error = $res['error'] ?? null;
+        $inserted = 0;
+        $updated = 0;
+        $synced = 0;
 
         $jsonFile = dirname(__DIR__, 2) . '/storage/action_network_935.json';
-        $countInDb = (int) $this->db->fetchColumn("SELECT COUNT(*) FROM picks WHERE is_custom = 0 OR action_network_pick_id IS NOT NULL");
-        if ($countInDb < 500 && file_exists($jsonFile)) {
+        if (file_exists($jsonFile)) {
             $jsonContent = file_get_contents($jsonFile);
             $jsonPicks = json_decode((string) $jsonContent, true);
             if (is_array($jsonPicks)) {
@@ -1629,6 +1641,12 @@ final class ActionNetworkService
                     } catch (Throwable $e) {}
                 }
             }
+        }
+
+        $cfg = self::config();
+        if ($cfg['api_key'] !== '' && $cfg['user_id'] !== '') {
+            $res = $this->syncPicks(1, 50, $syncType, true);
+            $synced = (int) ($res['items'] ?? 0);
         }
 
         $totalIngested = (int) $this->db->fetchColumn("SELECT COUNT(*) FROM picks WHERE is_custom = 0 OR action_network_pick_id IS NOT NULL");
