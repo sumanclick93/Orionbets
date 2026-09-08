@@ -127,6 +127,169 @@ $val = static fn (string $key, string $default = ''): string => (string) ($cms[$
             </div>
         </div>
 
+        <hr style="border:0;border-top:1px solid var(--color-border);margin:1.5rem 0;">
+
+        <div style="margin-bottom:1rem;">
+            <p class="kicker">Playbook Hero Card</p>
+            <h4 style="margin:0;">Hero Bet Slip Preview Card</h4>
+        </div>
+
+        <div class="form-row split">
+            <div>
+                <label for="playbook_slip_league_badge">League Tag / Sport Badge</label>
+                <input id="playbook_slip_league_badge" name="playbook_slip_league_badge" value="<?= e($val('playbook_slip_league_badge', 'NFL')) ?>">
+            </div>
+            <div>
+                <label for="playbook_slip_top_tag">Top Badge Tag (e.g. EXAMPLE)</label>
+                <input id="playbook_slip_top_tag" name="playbook_slip_top_tag" value="<?= e($val('playbook_slip_top_tag', 'EXAMPLE')) ?>">
+            </div>
+        </div>
+
+        <!-- Row 1 -->
+        <div style="margin-top:1rem;padding:0.75rem 1rem;background:var(--color-surface-alt);border:1px solid var(--color-border);border-radius:var(--radius);">
+            <p style="font-weight:600;margin:0 0 0.75rem 0;font-size:0.9rem;">Bet Slip Row 1 (Spread / Pick 1)</p>
+            <div class="form-row split">
+                <div>
+                    <label for="playbook_slip_row1_title">Selection / Matchup Line</label>
+                    <input id="playbook_slip_row1_title" name="playbook_slip_row1_title" value="<?= e($val('playbook_slip_row1_title', 'HOME -2.5')) ?>">
+                </div>
+                <div>
+                    <label for="playbook_slip_row1_time">Game Time</label>
+                    <input id="playbook_slip_row1_time" name="playbook_slip_row1_time" value="<?= e($val('playbook_slip_row1_time', '8:20 PM ET')) ?>">
+                </div>
+            </div>
+            <div class="form-row split" style="margin-top:0.5rem;">
+                <div>
+                    <label for="playbook_slip_row1_price">Price / Odds</label>
+                    <input id="playbook_slip_row1_price" name="playbook_slip_row1_price" value="<?= e($val('playbook_slip_row1_price', '-110')) ?>">
+                </div>
+                <div>
+                    <label for="playbook_slip_row1_stake">Stake / Units</label>
+                    <input id="playbook_slip_row1_stake" name="playbook_slip_row1_stake" value="<?= e($val('playbook_slip_row1_stake', '1 UNIT')) ?>">
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 2 -->
+        <div style="margin-top:0.75rem;padding:0.75rem 1rem;background:var(--color-surface-alt);border:1px solid var(--color-border);border-radius:var(--radius);">
+            <p style="font-weight:600;margin:0 0 0.75rem 0;font-size:0.9rem;">Bet Slip Row 2 (Total / Pick 2)</p>
+            <div class="form-row split">
+                <div>
+                    <label for="playbook_slip_row2_title">Selection / Matchup Line</label>
+                    <input id="playbook_slip_row2_title" name="playbook_slip_row2_title" value="<?= e($val('playbook_slip_row2_title', 'UNDER 44.5')) ?>">
+                </div>
+                <div>
+                    <label for="playbook_slip_row2_time">Game Time</label>
+                    <input id="playbook_slip_row2_time" name="playbook_slip_row2_time" value="<?= e($val('playbook_slip_row2_time', '1:00 PM ET')) ?>">
+                </div>
+            </div>
+            <div class="form-row split" style="margin-top:0.5rem;">
+                <div>
+                    <label for="playbook_slip_row2_price">Price / Odds</label>
+                    <input id="playbook_slip_row2_price" name="playbook_slip_row2_price" value="<?= e($val('playbook_slip_row2_price', '-105')) ?>">
+                </div>
+                <div>
+                    <label for="playbook_slip_row2_stake">Stake / Units</label>
+                    <input id="playbook_slip_row2_stake" name="playbook_slip_row2_stake" value="<?= e($val('playbook_slip_row2_stake', '1 UNIT')) ?>">
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 3 -->
+        <div style="margin-top:0.75rem;padding:0.75rem 1rem;background:var(--color-surface-alt);border:1px solid var(--color-border);border-radius:var(--radius);">
+            <p style="font-weight:600;margin:0 0 0.75rem 0;font-size:0.9rem;">Bet Slip Row 3 (Moneyline / Pick 3)</p>
+            <div class="form-row split">
+                <div>
+                    <label for="playbook_slip_row3_title">Selection / Matchup Line</label>
+                    <input id="playbook_slip_row3_title" name="playbook_slip_row3_title" value="<?= e($val('playbook_slip_row3_title', 'AWAY MONEYLINE')) ?>">
+                </div>
+                <div>
+                    <label for="playbook_slip_row3_time">Game Time</label>
+                    <input id="playbook_slip_row3_time" name="playbook_slip_row3_time" value="<?= e($val('playbook_slip_row3_time', '4:25 PM ET')) ?>">
+                </div>
+            </div>
+            <div class="form-row split" style="margin-top:0.5rem;">
+                <div>
+                    <label for="playbook_slip_row3_price">Price / Odds</label>
+                    <input id="playbook_slip_row3_price" name="playbook_slip_row3_price" value="<?= e($val('playbook_slip_row3_price', '+120')) ?>">
+                </div>
+                <div>
+                    <label for="playbook_slip_row3_stake">Stake / Units</label>
+                    <input id="playbook_slip_row3_stake" name="playbook_slip_row3_stake" value="<?= e($val('playbook_slip_row3_stake', '1 UNIT')) ?>">
+                </div>
+            </div>
+        </div>
+
+        <!-- Card Footer -->
+        <div style="margin-top:1rem;">
+            <label for="playbook_slip_footer_note">Card Footer Note</label>
+            <input id="playbook_slip_footer_note" name="playbook_slip_footer_note" value="<?= e($val('playbook_slip_footer_note', 'SENT BEFORE KICKOFF')) ?>">
+        </div>
+
+        <hr style="border:0;border-top:1px solid var(--color-border);margin:1.5rem 0;">
+
+        <div style="margin-bottom:1rem;">
+            <p class="kicker">Playbook Page Copy & CTAs</p>
+            <h4 style="margin:0;">The Playbook Landing Page (/the-playbook) Copy & Buttons</h4>
+        </div>
+
+        <label for="playbook_hero_title">Playbook Page Main Headline</label>
+        <textarea id="playbook_hero_title" name="playbook_hero_title" rows="2"><?= e($val('playbook_hero_title', "The\nPlaybook")) ?></textarea>
+
+        <div class="form-row split">
+            <div>
+                <label for="playbook_hero_sub">Playbook Subheadline</label>
+                <input id="playbook_hero_sub" name="playbook_hero_sub" value="<?= e($val('playbook_hero_sub', 'Every call we make, sent before the games start.')) ?>">
+            </div>
+            <div>
+                <label for="playbook_hero_scrawl">Handwritten Scrawl Accent Text</label>
+                <input id="playbook_hero_scrawl" name="playbook_hero_scrawl" value="<?= e($val('playbook_hero_scrawl', 'the game. the price. the stake.')) ?>">
+            </div>
+        </div>
+
+        <div class="form-row split">
+            <div>
+                <label for="playbook_cta1_text">Primary Button Text ("Get the Picks")</label>
+                <input id="playbook_cta1_text" name="playbook_cta1_text" value="<?= e($val('playbook_cta1_text', 'Get the Picks')) ?>">
+            </div>
+            <div>
+                <label for="playbook_cta1_url">Primary Button URL Link</label>
+                <input id="playbook_cta1_url" name="playbook_cta1_url" value="<?= e($val('playbook_cta1_url', '#plans')) ?>">
+            </div>
+        </div>
+
+        <div class="form-row split">
+            <div>
+                <label for="playbook_cta2_text">Secondary Button Text ("See the Record")</label>
+                <input id="playbook_cta2_text" name="playbook_cta2_text" value="<?= e($val('playbook_cta2_text', 'See the Record')) ?>">
+            </div>
+            <div>
+                <label for="playbook_cta2_url">Secondary Button URL Link</label>
+                <input id="playbook_cta2_url" name="playbook_cta2_url" value="<?= e($val('playbook_cta2_url', '/performance')) ?>">
+            </div>
+        </div>
+
+        <hr style="border:0;border-top:1px solid var(--color-border);margin:1.5rem 0;">
+
+        <div style="margin-bottom:1rem;">
+            <p class="kicker">Performance Board</p>
+            <h4 style="margin:0;">"See the Record" Page (/performance) Settings</h4>
+        </div>
+
+        <div class="form-row split">
+            <div>
+                <label for="performance_kicker">Record Page Kicker</label>
+                <input id="performance_kicker" name="performance_kicker" value="<?= e($val('performance_kicker', 'Public record')) ?>">
+            </div>
+            <div>
+                <label for="performance_title">Record Page Title Headline</label>
+                <input id="performance_title" name="performance_title" value="<?= e($val('performance_title', 'See the Record')) ?>">
+            </div>
+        </div>
+
+        <label for="performance_lede">Record Page Sub-copy / Description Lede</label>
+        <textarea id="performance_lede" name="performance_lede" rows="3"><?= e($val('performance_lede', 'Transparent tracking of Orion Bets outcomes. Figures update from the local Action Network cache after each sync.')) ?></textarea>
+
         <button class="btn btn-primary" type="submit" style="margin-top:1rem;">Save Hero & Banner Settings</button>
     </form>
 </section>

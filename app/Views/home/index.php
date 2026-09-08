@@ -97,8 +97,8 @@ $kickoffCtaLive = cms('kickoff_cta_live', "Get Today's Picks");
         </article>
     </div>
     <div class="ob-tri__cta">
-        <a class="ob-btn" href="<?= e(url('/the-playbook')) ?>">Get the Picks</a>
-        <a class="ob-btn ob-btn--ghost" href="<?= e(url('/performance')) ?>">See the Record</a>
+        <a class="ob-btn" href="<?= e(url(cms('hero_cta_url', '/the-playbook'))) ?>"><?= e(cms('hero_cta_text', 'Get the Picks')) ?></a>
+        <a class="ob-btn ob-btn--ghost" href="<?= e(url(cms('hero_sec_cta_url', '/performance'))) ?>"><?= e(cms('hero_sec_cta_text', 'See the Record')) ?></a>
     </div>
 </section>
 

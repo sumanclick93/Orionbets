@@ -1,8 +1,8 @@
 <section class="section">
     <div class="container">
-        <p class="kicker">Public record<?= empty($stats['is_demo']) ? '' : ' ' . demo_badge() ?></p>
-        <h1>See the Record</h1>
-        <p class="lede">Transparent tracking of Orion Bets outcomes. Figures update from the local Action Network cache after each sync.</p>
+        <p class="kicker"><?= e(cms('performance_kicker', 'Public record')) ?><?= empty($stats['is_demo']) ? '' : ' ' . demo_badge() ?></p>
+        <h1><?= e(cms('performance_title', 'See the Record')) ?></h1>
+        <p class="lede"><?= nl2br(e(cms('performance_lede', 'Transparent tracking of Orion Bets outcomes. Figures update from the local Action Network cache after each sync.'))) ?></p>
         
         <form method="GET" action="<?= e(url('/performance')) ?>" class="performance-filters-bar" id="performance-filter-form">
             <div class="filter-group filter-buttons">
