@@ -78,10 +78,13 @@ final class AuthService
         $this->mailer->send($user['email'], 'Welcome to Orion Bets', 'welcome', ['user' => $user]);
 
         try {
-            (new BeehiivService())->subscribeAndSendWelcome(
-                (string) ($user['email'] ?? ''),
-                (string) ($user['first_name'] ?? ''),
-                (string) ($user['last_name'] ?? '')
+            (new BeehiivService())->syncSubscriber(
+                email: (string) ($user['email'] ?? ''),
+                sendWelcomeEmail: false,
+                tier: 'free_member',
+                firstName: (string) ($user['first_name'] ?? ''),
+                lastName: (string) ($user['last_name'] ?? ''),
+                utmSource: 'registration'
             );
         } catch (\Throwable $e) {
             Logger::error('Beehiiv registration trigger exception', ['error' => $e->getMessage()]);
@@ -361,10 +364,13 @@ final class AuthService
             $created = true;
 
             try {
-                (new BeehiivService())->subscribeAndSendWelcome(
-                    (string) ($user['email'] ?? ''),
-                    (string) ($user['first_name'] ?? ''),
-                    (string) ($user['last_name'] ?? '')
+                $discordUsername = trim((string) ($profile['username'] ?? $profile['handle'] ?? 'Discord'));
+                (new BeehiivService())->syncSubscriber(
+                    email: (string) ($user['email'] ?? ''),
+                    sendWelcomeEmail: false,
+                    tier: 'free_member',
+                    firstName: $discordUsername !== '' ? $discordUsername : 'Discord',
+                    utmSource: 'discord_oauth'
                 );
             } catch (\Throwable $e) {
                 Logger::error('Beehiiv Discord OAuth registration trigger exception', ['error' => $e->getMessage()]);

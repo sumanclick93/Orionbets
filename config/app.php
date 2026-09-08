@@ -27,4 +27,8 @@ return [
         'leagues' => Env::get('ACTION_NETWORK_LEAGUES', 'nfl,ncaaf,nba,ncaab,mlb,nhl,soccer,wnba,ufc,pga,tennis'),
         'base_url' => Env::get('ACTION_NETWORK_BASE_URL', 'https://api.actionnetwork.com/web/v1'),
     ],
+    'beehiiv' => [
+        'api_key' => Env::get('BEEHIIV_API_KEY', ''),
+        'publication_id' => Env::get('BEEHIIV_PUBLICATION_ID', ''),
+    ],
 ];

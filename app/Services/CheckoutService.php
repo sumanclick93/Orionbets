@@ -706,6 +706,30 @@ final class CheckoutService
             Logger::error('Failed to send transactional receipt email', ['error' => $e->getMessage()]);
         }
 
+        try {
+            $isPaidMember = ($plan['slug'] ?? '') !== 'free';
+            $tier = $isPaidMember ? 'paid_member' : 'free_member';
+            $utmSource = $provider === 'paypal' ? 'paypal_purchase' : 'upgrade_chat';
+            $firstName = (string) ($fresh['first_name'] ?? '');
+            $lastName = (string) ($fresh['last_name'] ?? '');
+            if ($firstName === '' && $name !== '' && $name !== 'Guest') {
+                $nameParts = split_person_name($name);
+                $firstName = $nameParts['first_name'];
+                $lastName = $nameParts['last_name'];
+            }
+
+            (new BeehiivService())->syncSubscriber(
+                email: $email,
+                sendWelcomeEmail: $isPaidMember,
+                tier: $tier,
+                firstName: $firstName !== '' ? $firstName : null,
+                lastName: $lastName !== '' ? $lastName : null,
+                utmSource: $utmSource
+            );
+        } catch (\Throwable $e) {
+            Logger::error('Failed to trigger Beehiiv checkout subscriber sync', ['error' => $e->getMessage()]);
+        }
+
         return [
             'user' => $fresh,
             'plan' => $plan,
