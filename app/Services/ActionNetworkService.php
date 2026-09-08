@@ -1090,9 +1090,26 @@ final class ActionNetworkService
             'title' => mb_substr($title !== ' · ' ? $title : $matchup, 0, 190),
         ];
 
+        $pickDate = !empty($pick['created_at'])
+            ? (string) $pick['created_at']
+            : (!empty($pick['published_at'])
+                ? (string) $pick['published_at']
+                : (!empty($pick['settled_at'])
+                    ? (string) $pick['settled_at']
+                    : (!empty($pick['scheduled_at'])
+                        ? (string) $pick['scheduled_at']
+                        : date('Y-m-d H:i:s'))));
+
         if ($existing) {
             $update = $core;
             unset($update['action_network_pick_id']);
+            if (!empty($pickDate)) {
+                $update['created_at'] = $pickDate;
+                $update['published_at'] = $pickDate;
+                if ($this->db->columnExists('picks', 'scheduled_at')) {
+                    $update['scheduled_at'] = $pickDate;
+                }
+            }
             if ((int) ($existing['is_custom'] ?? 0) === 1) {
                 $update = [
                     'status' => $core['status'],
@@ -1105,12 +1122,11 @@ final class ActionNetworkService
                 }
             }
             $this->db->update('picks', $update, 'id = :id', ['id' => $existing['id']]);
-            $this->syncPickResult((int) $existing['id'], $core['status'], (float) ($pick['result_units'] ?? 0), $analysis);
+            $this->syncPickResult((int) $existing['id'], $core['status'], (float) ($pick['result_units'] ?? 0), $analysis, $pickDate);
             return ['inserted' => false, 'updated' => true, 'id' => (int) $existing['id']];
         }
 
         $slug = $this->uniqueSlug($matchup . '-' . $anId);
-        $now = date('Y-m-d H:i:s');
         $insert = $core + [
             'slug' => $slug,
             'analysis' => $analysis !== '' ? $analysis : 'Synced from Action Network.',
@@ -1120,25 +1136,33 @@ final class ActionNetworkService
             'is_published' => 1,
             'is_active' => 1,
             'is_custom' => 0,
-            'published_at' => $now,
+            'published_at' => $pickDate,
+            'created_at' => $pickDate,
         ];
+        if ($this->db->columnExists('picks', 'scheduled_at')) {
+            $insert['scheduled_at'] = $pickDate;
+        }
         $id = $this->db->insert('picks', $insert);
-        $this->syncPickResult($id, $core['status'], (float) ($pick['result_units'] ?? 0), $analysis);
+        $this->syncPickResult($id, $core['status'], (float) ($pick['result_units'] ?? 0), $analysis, $pickDate);
         return ['inserted' => true, 'updated' => false, 'id' => $id];
     }
 
-    private function syncPickResult(int $pickId, string $status, float $units, string $notes): void
+    private function syncPickResult(int $pickId, string $status, float $units, string $notes, ?string $recordedAt = null): void
     {
         if (!in_array($status, ['won', 'lost', 'push', 'canceled', 'cancelled'], true)) {
             return;
         }
 
-        $existing = $this->db->fetch('SELECT id FROM pick_results WHERE pick_id = :id', ['id' => $pickId]);
+        $existing = $this->db->fetch('SELECT id, recorded_at FROM pick_results WHERE pick_id = :id', ['id' => $pickId]);
+        $finalRecordedAt = !empty($recordedAt)
+            ? $recordedAt
+            : (!empty($existing['recorded_at']) ? (string) $existing['recorded_at'] : date('Y-m-d H:i:s'));
+
         $data = [
             'result' => $status === 'canceled' ? 'cancelled' : $status,
             'units' => $units,
             'closing_notes' => $notes !== '' ? $notes : null,
-            'recorded_at' => date('Y-m-d H:i:s'),
+            'recorded_at' => $finalRecordedAt,
         ];
         if ($existing) {
             $this->db->update('pick_results', $data, 'pick_id = :id', ['id' => $pickId]);

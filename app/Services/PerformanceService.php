@@ -14,46 +14,51 @@ final class PerformanceService
 
     /**
      * Get available active leagues from database, pick history, or events.
+     * Whitelisted to the 7 covered sports with clean acronyms: NFL, NCAAF, NBA, NCAAB, MLB, NHL, WNBA.
      *
      * @return array<int, array<string, mixed>>
      */
     public function getAvailableLeagues(): array
     {
-        if ($this->db->tableExists('leagues')) {
-            $leagues = $this->db->fetchAll(
-                'SELECT DISTINCT l.id, l.name, l.slug
-                 FROM leagues l
-                 LEFT JOIN picks p ON (p.league_id = l.id OR p.league = l.slug)
-                 LEFT JOIN events e ON (e.league_id = l.id)
-                 WHERE l.is_active = 1 OR p.id IS NOT NULL OR e.id IS NOT NULL
-                 ORDER BY l.name ASC'
-            );
-            if (!empty($leagues)) {
-                return $leagues;
-            }
+        $allowed = [
+            'nfl' => 'NFL',
+            'ncaaf' => 'NCAAF',
+            'nba' => 'NBA',
+            'ncaab' => 'NCAAB',
+            'mlb' => 'MLB',
+            'nhl' => 'NHL',
+            'wnba' => 'WNBA',
+        ];
 
-            return $this->db->fetchAll(
-                'SELECT id, name, slug FROM leagues WHERE is_active = 1 ORDER BY name ASC'
-            );
+        $results = [];
+        foreach ($allowed as $slug => $acronym) {
+            $results[] = [
+                'id' => $slug,
+                'slug' => $slug,
+                'name' => $acronym,
+            ];
         }
 
-        return [];
+        return $results;
     }
 
     /**
-     * Get available distinct season years from pick history or events.
+     * Get available distinct season years based on sports campaign rules.
      *
      * @return array<int, int>
      */
     public function getAvailableSeasons(): array
     {
+        $seasonExpr = $this->seasonSql('COALESCE(pr.recorded_at, p.published_at, p.created_at, e.start_time, e.event_at)');
         $rows = $this->db->fetchAll(
-            'SELECT DISTINCT YEAR(COALESCE(pr.recorded_at, p.updated_at, p.published_at, e.start_time, e.event_at)) AS season_year
+            "SELECT DISTINCT {$seasonExpr} AS season_year
              FROM picks p
              LEFT JOIN pick_results pr ON pr.pick_id = p.id
+             LEFT JOIN sports s ON s.id = p.sport_id
+             LEFT JOIN leagues l ON l.id = p.league_id
              LEFT JOIN events e ON e.id = p.event_id
              WHERE p.deleted_at IS NULL
-             ORDER BY season_year DESC'
+             ORDER BY season_year DESC"
         );
 
         $years = [];
@@ -63,10 +68,13 @@ final class PerformanceService
             }
         }
 
-        if (empty($years)) {
-            $curr = (int) date('Y');
-            $years = [$curr, $curr - 1, $curr - 2];
+        if (!in_array(2025, $years, true)) {
+            $years[] = 2025;
         }
+        if (!in_array(2026, $years, true)) {
+            $years[] = 2026;
+        }
+        rsort($years);
 
         return array_values(array_unique($years));
     }
@@ -91,11 +99,12 @@ final class PerformanceService
             }
         }
 
+        $seasonExpr = $this->seasonSql('COALESCE(pr.recorded_at, p.published_at, p.created_at)');
         if (!empty($season)) {
-            $where[] = 'YEAR(COALESCE(pr.recorded_at, p.updated_at, p.published_at)) = :season_year';
+            $where[] = "{$seasonExpr} = :season_year";
             $params['season_year'] = (int) $season;
         } elseif ($range === 'season') {
-            $where[] = 'YEAR(COALESCE(pr.recorded_at, p.updated_at, p.published_at)) = :season_year';
+            $where[] = "{$seasonExpr} = :season_year";
             $params['season_year'] = (int) date('Y');
         }
 
@@ -176,11 +185,12 @@ final class PerformanceService
             }
         }
 
+        $seasonExpr = $this->seasonSql('COALESCE(pr.recorded_at, p.published_at, p.created_at)');
         if (!empty($season)) {
-            $where[] = 'YEAR(COALESCE(pr.recorded_at, p.updated_at, p.published_at)) = :season_year';
+            $where[] = "{$seasonExpr} = :season_year";
             $params['season_year'] = (int) $season;
         } elseif ($range === 'season') {
-            $where[] = 'YEAR(COALESCE(pr.recorded_at, p.updated_at, p.published_at)) = :season_year';
+            $where[] = "{$seasonExpr} = :season_year";
             $params['season_year'] = (int) date('Y');
         }
 
@@ -223,14 +233,16 @@ final class PerformanceService
                 $wl[$row['result']] = ($wl[$row['result']] ?? 0) + 1;
             }
             if (!empty($row['sport'])) {
-                $sports[$row['sport']] = ($sports[$row['sport']] ?? 0) + 1;
+                $sName = $this->normalizeLeagueName((string) $row['sport']);
+                $sports[$sName] = ($sports[$sName] ?? 0) + 1;
             }
             if (!empty($row['league'])) {
-                $leagues[$row['league']] = ($leagues[$row['league']] ?? 0) + 1;
+                $lName = $this->normalizeLeagueName((string) $row['league']);
+                $leagues[$lName] = ($leagues[$lName] ?? 0) + 1;
             }
         }
 
-        if ($this->db->tableExists('performance_metrics')) {
+        if (empty($season) && empty($league) && $this->db->tableExists('performance_metrics')) {
             $metricRows = $this->db->fetchAll('SELECT * FROM performance_metrics WHERE period = "all" AND synced_at IS NOT NULL');
             foreach ($metricRows as $m) {
                 if (empty($m['sport'])) {
@@ -240,7 +252,7 @@ final class PerformanceService
                         $wl['push'] = (int) ($m['pushes'] ?? 0);
                     }
                 } else {
-                    $sName = strtoupper((string) $m['sport']);
+                    $sName = $this->normalizeLeagueName((string) $m['sport']);
                     if (!isset($sports[$sName])) {
                         $sports[$sName] = (int) ($m['wins'] ?? $m['total_bets'] ?? 0);
                     }
@@ -266,32 +278,64 @@ final class PerformanceService
         ];
     }
 
+    private function seasonSql(string $dateCol = 'COALESCE(pr.recorded_at, p.published_at, p.created_at)'): string
+    {
+        return "(CASE
+            WHEN LOWER(COALESCE(s.slug, p.sport, l.slug, '')) IN ('nfl', 'ncaaf', 'football') THEN
+                CASE WHEN MONTH({$dateCol}) IN (1, 2) THEN YEAR({$dateCol}) - 1 ELSE YEAR({$dateCol}) END
+            WHEN LOWER(COALESCE(s.slug, p.sport, l.slug, '')) IN ('nba', 'ncaab', 'nhl', 'basketball', 'hockey') THEN
+                CASE WHEN MONTH({$dateCol}) BETWEEN 1 AND 7 THEN YEAR({$dateCol}) - 1 ELSE YEAR({$dateCol}) END
+            ELSE
+                YEAR({$dateCol})
+        END)";
+    }
+
+    private function normalizeLeagueName(string $raw): string
+    {
+        $clean = strtolower(trim($raw));
+        return match ($clean) {
+            'nfl', 'national football league' => 'NFL',
+            'ncaaf', 'college football' => 'NCAAF',
+            'nba', 'national basketball association' => 'NBA',
+            'ncaab', 'college basketball' => 'NCAAB',
+            'mlb', 'major league baseball' => 'MLB',
+            'nhl', 'national hockey league' => 'NHL',
+            'wnba', 'women\'s national basketball association' => 'WNBA',
+            default => strtoupper($raw),
+        };
+    }
+
     private function resolveLeagueFilter(string $league): array
     {
+        $cleanLeague = strtolower(trim($league));
+        $upperLeague = strtoupper(trim($league));
+
         $leagueRow = null;
         if (is_numeric($league)) {
             $leagueRow = $this->db->fetch('SELECT id, slug FROM leagues WHERE id = :id LIMIT 1', ['id' => (int) $league]);
         }
         if (!$leagueRow) {
-            $leagueRow = $this->db->fetch('SELECT id, slug FROM leagues WHERE slug = :slug LIMIT 1', ['slug' => strtolower(trim($league))]);
+            $leagueRow = $this->db->fetch('SELECT id, slug FROM leagues WHERE slug = :slug LIMIT 1', ['slug' => $cleanLeague]);
         }
 
         if ($leagueRow) {
-            $clause = '(p.league_id = :lid1 OR p.league = :lslug1 OR l.id = :lid2 OR l.slug = :lslug2 OR s.slug = :lslug3)';
+            $clause = '(p.league_id = :lid1 OR LOWER(p.league) = :lslug1 OR UPPER(p.league) = :lslug_upper1 OR l.id = :lid2 OR LOWER(l.slug) = :lslug2 OR LOWER(s.slug) = :lslug3)';
             $params = [
                 'lid1' => (int) $leagueRow['id'],
-                'lslug1' => (string) $leagueRow['slug'],
+                'lslug1' => $cleanLeague,
+                'lslug_upper1' => $upperLeague,
                 'lid2' => (int) $leagueRow['id'],
-                'lslug2' => (string) $leagueRow['slug'],
-                'lslug3' => (string) $leagueRow['slug'],
+                'lslug2' => $cleanLeague,
+                'lslug3' => $cleanLeague,
             ];
         } else {
-            $clause = '(p.league_id = :league_val OR p.league = :league_str1 OR l.slug = :league_str2 OR s.slug = :league_str3)';
+            $clause = '(p.league_id = :league_val OR LOWER(p.league) = :league_str1 OR UPPER(p.league) = :league_str_upper OR LOWER(l.slug) = :league_str2 OR LOWER(s.slug) = :league_str3)';
             $params = [
                 'league_val' => is_numeric($league) ? (int) $league : 0,
-                'league_str1' => strtolower(trim($league)),
-                'league_str2' => strtolower(trim($league)),
-                'league_str3' => strtolower(trim($league)),
+                'league_str1' => $cleanLeague,
+                'league_str_upper' => $upperLeague,
+                'league_str2' => $cleanLeague,
+                'league_str3' => $cleanLeague,
             ];
         }
 
