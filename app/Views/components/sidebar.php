@@ -10,6 +10,7 @@ $admin = $variant === 'admin';
     <nav>
         <?php if ($admin): ?>
             <a class="<?= nav_class('/admin', true) ?>" href="<?= e(url('/admin')) ?>">Overview</a>
+            <a class="<?= nav_class('/admin/profile') ?>" href="<?= e(url('/admin/profile')) ?>">Profile & Security</a>
             <?php if (auth()->isAdmin()): ?>
                 <a class="<?= nav_class('/admin/users') ?>" href="<?= e(url('/admin/users')) ?>">Members</a>
                 <a class="<?= nav_class('/admin/transactions') ?>" href="<?= e(url('/admin/transactions')) ?>">Transactions</a>

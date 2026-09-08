@@ -15,6 +15,7 @@ use App\Controllers\Admin\AdminSubscriptionController;
 use App\Controllers\Admin\AdminSyncController;
 use App\Controllers\Admin\AdminTransactionController;
 use App\Controllers\Admin\AdminUserController;
+use App\Controllers\Admin\ProfileController;
 use App\Controllers\AuthController;
 use App\Controllers\CheckoutController;
 use App\Controllers\ContentController;
@@ -92,6 +93,9 @@ $router->get('/account/subscription', [AccountController::class, 'subscription']
 $router->post('/account/subscription', [AccountController::class, 'updateSubscription'], ['auth', 'csrf']);
 
 $router->get('/admin', [AdminDashboardController::class, 'index'], ['auth', 'admin']);
+$router->get('/admin/profile', [ProfileController::class, 'index'], ['auth', 'admin']);
+$router->post('/admin/profile/update-email', [ProfileController::class, 'updateEmail'], ['auth', 'admin', 'csrf']);
+$router->post('/admin/profile/update-password', [ProfileController::class, 'updatePassword'], ['auth', 'admin', 'csrf']);
 $router->get('/admin/users', [AdminUserController::class, 'index'], ['auth', 'admin', 'role:admin,super_admin']);
 $router->get('/admin/users/export-csv', [AdminUserController::class, 'exportCsv'], ['auth', 'admin', 'role:admin,super_admin']);
 $router->get('/admin/users/{id}', [AdminUserController::class, 'show'], ['auth', 'admin', 'role:admin,super_admin']);
