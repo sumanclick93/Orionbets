@@ -221,9 +221,15 @@ $val = static fn (string $key, string $default = ''): string => (string) ($cms[$
         </div>
 
         <!-- Card Footer -->
-        <div style="margin-top:1rem;">
-            <label for="playbook_slip_footer_note">Card Footer Note</label>
-            <input id="playbook_slip_footer_note" name="playbook_slip_footer_note" value="<?= e($val('playbook_slip_footer_note', 'SENT BEFORE KICKOFF')) ?>">
+        <div class="form-row split" style="margin-top:1rem;">
+            <div>
+                <label for="playbook_slip_footer_note">Card Footer Note</label>
+                <input id="playbook_slip_footer_note" name="playbook_slip_footer_note" value="<?= e($val('playbook_slip_footer_note', 'SENT BEFORE KICKOFF')) ?>">
+            </div>
+            <div>
+                <label for="playbook_annot">Bottom Card Handwritten Accent Text</label>
+                <input id="playbook_annot" name="playbook_annot" value="<?= e($val('playbook_annot', 'the play, the price, the stake — every day')) ?>">
+            </div>
         </div>
 
         <hr style="border:0;border-top:1px solid var(--color-border);margin:1.5rem 0;">
@@ -242,7 +248,7 @@ $val = static fn (string $key, string $default = ''): string => (string) ($cms[$
                 <input id="playbook_hero_sub" name="playbook_hero_sub" value="<?= e($val('playbook_hero_sub', 'Every call we make, sent before the games start.')) ?>">
             </div>
             <div>
-                <label for="playbook_hero_scrawl">Handwritten Scrawl Accent Text</label>
+                <label for="playbook_hero_scrawl">Handwritten Scrawl Accent Text (Left)</label>
                 <input id="playbook_hero_scrawl" name="playbook_hero_scrawl" value="<?= e($val('playbook_hero_scrawl', 'the game. the price. the stake.')) ?>">
             </div>
         </div>
@@ -267,6 +273,33 @@ $val = static fn (string $key, string $default = ''): string => (string) ($cms[$
                 <label for="playbook_cta2_url">Secondary Button URL Link</label>
                 <input id="playbook_cta2_url" name="playbook_cta2_url" value="<?= e($val('playbook_cta2_url', '/performance')) ?>">
             </div>
+        </div>
+
+        <div class="form-row split" style="margin-top:1rem;">
+            <div>
+                <label for="playbook_footer_strip_title">Footer Strip Headline</label>
+                <input id="playbook_footer_strip_title" name="playbook_footer_strip_title" value="<?= e($val('playbook_footer_strip_title', 'Published before kickoff · results counted by Action Network')) ?>">
+            </div>
+            <div>
+                <label for="playbook_footer_strip_sub">Footer Strip Subtitle</label>
+                <input id="playbook_footer_strip_sub" name="playbook_footer_strip_sub" value="<?= e($val('playbook_footer_strip_sub', 'Illustrative example · 21+ · informational use only, not betting advice')) ?>">
+            </div>
+        </div>
+
+        <div class="form-row split" style="margin-top:1rem;">
+            <div>
+                <label for="playbook_plans_kicker">Plans Section Kicker</label>
+                <input id="playbook_plans_kicker" name="playbook_plans_kicker" value="<?= e($val('playbook_plans_kicker', 'Lock the founders rate')) ?>">
+            </div>
+            <div>
+                <label for="playbook_plans_title">Plans Section Title</label>
+                <input id="playbook_plans_title" name="playbook_plans_title" value="<?= e($val('playbook_plans_title', 'Your price never moves.')) ?>">
+            </div>
+        </div>
+
+        <div style="margin-top:1rem;">
+            <label for="playbook_plans_lede">Plans Section Description (Lede)</label>
+            <textarea id="playbook_plans_lede" name="playbook_plans_lede" rows="3"><?= e($val('playbook_plans_lede', 'The Playbook is a daily picks subscription. Every morning you get the play, the price, and the size — from a system with a public record. Informational use only. Not betting advice.')) ?></textarea>
         </div>
 
         <hr style="border:0;border-top:1px solid var(--color-border);margin:1.5rem 0;">

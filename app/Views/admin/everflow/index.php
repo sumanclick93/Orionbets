@@ -180,6 +180,7 @@ $ef = $everflow ?? everflow_config();
                     <tr>
                         <th>Date</th>
                         <th>Kind</th>
+                        <th>Method</th>
                         <th>Order ID</th>
                         <th>Customer</th>
                         <th>Transaction ID</th>
@@ -194,6 +195,18 @@ $ef = $everflow ?? everflow_config();
                 <?php foreach ($postbacks as $row): ?>
                     <?php
                     $rowStatus = $statusOf($row);
+                    $adv1Val = strtolower(trim((string) ($row['adv1'] ?? '')));
+                    $methodClass = match ($adv1Val) {
+                        'paypal' => 'badge-demo',
+                        'discord' => 'badge-accent',
+                        default => 'badge',
+                    };
+                    $methodLabel = match ($adv1Val) {
+                        'paypal' => 'PayPal',
+                        'discord' => 'Discord',
+                        '' => '—',
+                        default => ucfirst($adv1Val),
+                    };
                     $detail = [
                         'id' => (int) ($row['id'] ?? 0),
                         'url' => (string) ($row['postback_url'] ?? $row['url'] ?? ''),
@@ -206,6 +219,7 @@ $ef = $everflow ?? everflow_config();
                             'amount' => $row['amount'] ?? null,
                             'currency' => (string) ($row['currency'] ?? 'USD'),
                             'event_type' => (string) ($row['event_type'] ?? ''),
+                            'adv1' => (string) ($row['adv1'] ?? ''),
                             'sub1' => (string) ($row['sub1'] ?? ''),
                             'sub2' => (string) ($row['sub2'] ?? ''),
                             'sub3' => (string) ($row['sub3'] ?? ''),
@@ -229,10 +243,12 @@ $ef = $everflow ?? everflow_config();
                         (string) ($row['order_number'] ?? ''),
                         $customer($row),
                         $tid,
+                        $adv1Val,
                         $subsLabel($row),
                     ]))) ?>">
                         <td data-label="Date"><?= e(format_datetime($row['created_at'] ?? null)) ?></td>
                         <td data-label="Kind"><?= e($kind !== '' ? $kind : '—') ?></td>
+                        <td data-label="Method"><span class="badge <?= e($methodClass) ?>"><?= e($methodLabel) ?></span></td>
                         <td data-label="Order ID">
                             <code class="ef-mono"><?= e((string) ($row['order_id'] ?? '—')) ?></code>
                             <?php if (!empty($row['order_number']) && $row['order_number'] !== ($row['order_id'] ?? '')): ?>

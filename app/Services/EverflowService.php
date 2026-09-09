@@ -473,10 +473,20 @@ final class EverflowService
             $url = '';
             $error = null;
             $eventId = $this->eventIdFor($kind, (string) ($payload['event_id'] ?? ''));
+            $adv1Raw = (string) ($payload['adv1'] ?? $payload['payment_method'] ?? '');
+            $adv1 = strtolower(trim($adv1Raw));
+            if (in_array($adv1, ['paypal', 'paypal_checkout', 'direct_paypal'], true)) {
+                $adv1 = 'paypal';
+            } elseif (in_array($adv1, ['discord', 'upgradechat', 'upgrade_chat', 'upgrade.chat'], true)) {
+                $adv1 = 'discord';
+            } elseif ($adv1 !== '') {
+                $adv1 = substr($adv1, 0, 64);
+            }
+
             if ($tid === '') {
                 $error = 'missing_transaction_id';
             } else {
-                $url = $this->postbackUrl($tid, $amount, $orderId, $currency, $kind, $subs, $eventId, $email, $orderNumber);
+                $url = $this->postbackUrl($tid, $amount, $orderId, $currency, $kind, $subs, $eventId, $email, $orderNumber, $adv1);
                 if ($url === '') {
                     $error = 'not_configured';
                 }
@@ -510,6 +520,7 @@ final class EverflowService
                 'amount' => $amount,
                 'currency' => $currency,
                 'event_type' => $eventType,
+                'adv1' => $adv1 !== '' ? $adv1 : null,
                 'sub1' => $subs['sub1'] !== '' ? $subs['sub1'] : null,
                 'sub2' => $subs['sub2'] !== '' ? $subs['sub2'] : null,
                 'sub3' => $subs['sub3'] !== '' ? $subs['sub3'] : null,
@@ -549,6 +560,7 @@ final class EverflowService
                     'amount' => $payload['amount'] ?? null,
                     'currency' => $payload['currency'] ?? 'USD',
                     'event_type' => $payload['event_type'] ?? 'sale',
+                    'adv1' => $adv1 !== '' ? $adv1 : null,
                     'status' => 'failed',
                     'error_message' => $e->getMessage(),
                 ]);
@@ -621,6 +633,7 @@ final class EverflowService
             'currency' => $row['currency'] ?? 'USD',
             'event_type' => $row['event_type'] ?? 'sale',
             'event_id' => $this->eventIdFor((string) ($row['kind'] ?? 'sale')),
+            'adv1' => $row['adv1'] ?? '',
             'sub1' => $row['sub1'] ?? '',
             'sub2' => $row['sub2'] ?? '',
             'sub3' => $row['sub3'] ?? '',
@@ -1033,7 +1046,8 @@ final class EverflowService
         array $subs = [],
         string $eventId = '',
         string $email = '',
-        string $orderNumber = ''
+        string $orderNumber = '',
+        string $adv1 = ''
     ): string {
         $template = trim((string) Env::get('EVERFLOW_POSTBACK_URL', ''));
         $cfg = everflow_config();
@@ -1049,6 +1063,7 @@ final class EverflowService
         }
 
         $orderNum = $orderNumber !== '' ? $orderNumber : $orderId;
+        $adv1Val = $adv1 !== '' ? $adv1 : $orderNum;
 
         $url = strtr($template, [
             '{transaction_id}' => rawurlencode($tid),
@@ -1069,7 +1084,7 @@ final class EverflowService
             '{event_id}' => rawurlencode($eventId),
             '{nid}' => rawurlencode((string) $cfg['nid']),
             '{domain}' => $cfg['host'],
-            '{adv1}' => rawurlencode($orderNum),
+            '{adv1}' => rawurlencode($adv1Val),
             '{adv2}' => rawurlencode($email),
             '{sub1}' => rawurlencode((string) ($subs['sub1'] ?? '')),
             '{sub2}' => rawurlencode((string) ($subs['sub2'] ?? '')),
@@ -1112,7 +1127,9 @@ final class EverflowService
         if ($eventId !== '' && empty($query['adv_event_id'])) {
             $query['adv_event_id'] = $eventId;
         }
-        if ($orderNum !== '' && empty($query['adv1'])) {
+        if ($adv1 !== '') {
+            $query['adv1'] = $adv1;
+        } elseif ($orderNum !== '' && empty($query['adv1'])) {
             $query['adv1'] = $orderNum;
         }
         if ($email !== '' && empty($query['adv2'])) {

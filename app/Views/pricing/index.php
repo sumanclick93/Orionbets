@@ -37,20 +37,20 @@
                     <span class="ob-pb__dots" data-dots><i class="is-on"></i><i></i><i></i><i></i></span>
                 </div>
             </div>
-            <p class="ob-pb__annot">the play, the price, the stake — every day</p>
+            <p class="ob-pb__annot"><?= e(cms('playbook_annot', 'the play, the price, the stake — every day')) ?></p>
         </div>
     </div>
     <div class="ob-pb__strip">
-        <b>Published before kickoff · results counted by Action Network</b>
-        <span>Illustrative example · 21+ · informational use only, not betting advice</span>
+        <b><?= e(cms('playbook_footer_strip_title', 'Published before kickoff · results counted by Action Network')) ?></b>
+        <span><?= e(cms('playbook_footer_strip_sub', 'Illustrative example · 21+ · informational use only, not betting advice')) ?></span>
     </div>
 </section>
 
 <section class="section" id="plans">
     <div class="container">
-        <p class="kicker">Lock the founders rate</p>
-        <h2 class="ob-plans-title">Your price never moves.</h2>
-        <p class="lede">The Playbook is a daily picks subscription. Every morning you get the play, the price, and the size — from a system with a public record. Informational use only. Not betting advice.</p>
+        <p class="kicker"><?= e(cms('playbook_plans_kicker', 'Lock the founders rate')) ?></p>
+        <h2 class="ob-plans-title"><?= e(cms('playbook_plans_title', 'Your price never moves.')) ?></h2>
+        <p class="lede"><?= e(cms('playbook_plans_lede', 'The Playbook is a daily picks subscription. Every morning you get the play, the price, and the size — from a system with a public record. Informational use only. Not betting advice.')) ?></p>
         <div class="pricing-grid">
             <?php foreach ($plans as $plan): ?>
                 <?php if ((int) ($plan['price_cents'] ?? 0) === 0) continue; ?>

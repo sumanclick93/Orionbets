@@ -795,6 +795,13 @@ final class CheckoutService
             $saleId = (string) ($result['order_id'] ?? $order['uuid'] ?? '');
             $chargeId = (string) ($result['transaction_id'] ?? $order['transaction_id'] ?? '');
             $provider = strtolower((string) ($order['provider'] ?? $session['provider'] ?? ''));
+            $adv1 = $provider === 'paypal' ? 'paypal' : 'discord';
+            if (!empty($order['adv1'])) {
+                $adv1 = strtolower(trim((string) $order['adv1']));
+            } elseif (!empty($order['payment_method'])) {
+                $adv1 = strtolower(trim((string) $order['payment_method']));
+            }
+
             $orderId = $saleId !== '' ? $saleId : $chargeId;
             $orderNumber = $chargeId !== '' ? $chargeId : $saleId;
             if ($provider === 'paypal') {
@@ -832,6 +839,7 @@ final class CheckoutService
                 'currency' => $currency,
                 'email' => $email,
                 'event_type' => $eventType,
+                'adv1' => $adv1,
                 'user_id' => $result['user']['id'] ?? $session['user_id'] ?? null,
                 'sub1' => $tracking['sub1'] ?? '',
                 'sub2' => $tracking['sub2'] ?? '',

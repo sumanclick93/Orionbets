@@ -207,6 +207,12 @@ final class Schema
             'playbook_slip_row3_price' => ['+120', 'text'],
             'playbook_slip_row3_stake' => ['1 UNIT', 'text'],
             'playbook_slip_footer_note' => ['SENT BEFORE KICKOFF', 'text'],
+            'playbook_annot' => ['the play, the price, the stake — every day', 'text'],
+            'playbook_footer_strip_title' => ['Published before kickoff · results counted by Action Network', 'text'],
+            'playbook_footer_strip_sub' => ['Illustrative example · 21+ · informational use only, not betting advice', 'text'],
+            'playbook_plans_kicker' => ['Lock the founders rate', 'text'],
+            'playbook_plans_title' => ['Your price never moves.', 'text'],
+            'playbook_plans_lede' => ['The Playbook is a daily picks subscription. Every morning you get the play, the price, and the size — from a system with a public record. Informational use only. Not betting advice.', 'textarea'],
             'playbook_hero_title' => ["The\nPlaybook", 'textarea'],
             'playbook_hero_sub' => ['Every call we make, sent before the games start.', 'text'],
             'playbook_hero_scrawl' => ['the game. the price. the stake.', 'text'],
@@ -560,6 +566,7 @@ final class Schema
                     sub3 VARCHAR(255) NULL,
                     sub4 VARCHAR(255) NULL,
                     sub5 VARCHAR(255) NULL,
+                    adv1 VARCHAR(64) NULL,
                     postback_url TEXT NULL,
                     url VARCHAR(700) NULL,
                     http_status INT NULL,
@@ -593,6 +600,7 @@ final class Schema
         self::addColumn($db, 'everflow_postbacks', 'sub3', '`sub3` VARCHAR(255) NULL');
         self::addColumn($db, 'everflow_postbacks', 'sub4', '`sub4` VARCHAR(255) NULL');
         self::addColumn($db, 'everflow_postbacks', 'sub5', '`sub5` VARCHAR(255) NULL');
+        self::addColumn($db, 'everflow_postbacks', 'adv1', '`adv1` VARCHAR(64) NULL');
         $migrated = self::addColumn($db, 'everflow_postbacks', 'postback_url', '`postback_url` TEXT NULL') || $migrated;
         self::addColumn($db, 'everflow_postbacks', 'url', '`url` VARCHAR(700) NULL');
         self::addColumn($db, 'everflow_postbacks', 'http_status', '`http_status` INT NULL');

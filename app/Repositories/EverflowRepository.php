@@ -301,7 +301,7 @@ final class EverflowRepository extends BaseRepository
         $q = trim((string) ($filters['q'] ?? ''));
         if ($q !== '') {
             $search = [];
-            foreach (['order_id', 'transaction_id', 'everflow_transaction_id', 'email', 'sub1', 'sub2', 'sub3', 'sub4', 'sub5', 'kind', 'event_type'] as $col) {
+            foreach (['order_id', 'transaction_id', 'everflow_transaction_id', 'email', 'adv1', 'sub1', 'sub2', 'sub3', 'sub4', 'sub5', 'kind', 'event_type'] as $col) {
                 if ($this->hasColumn('everflow_postbacks', $col)) {
                     $search[] = 'p.' . $col . ' LIKE :q';
                 }

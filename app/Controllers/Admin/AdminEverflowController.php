@@ -87,7 +87,7 @@ final class AdminEverflowController extends Controller
             $rows = $this->db->tableExists('everflow_postbacks') ? $repo->exportPostbacks($filters) : [];
             fputcsv($out, [
                 'Date', 'Kind', 'Order ID', 'Order Number', 'Customer Email', 'User ID', 'Transaction ID',
-                'Amount', 'Currency', 'Event Type', 'Sub1', 'Sub2', 'Sub3', 'Sub4', 'Sub5',
+                'Amount', 'Currency', 'Event Type', 'Payment Method (adv1)', 'Sub1', 'Sub2', 'Sub3', 'Sub4', 'Sub5',
                 'HTTP Status', 'Everflow Status', 'Postback URL', 'Response Body', 'Error',
             ]);
             foreach ($rows as $row) {
@@ -102,6 +102,7 @@ final class AdminEverflowController extends Controller
                     $row['amount'] ?? '',
                     $row['currency'] ?? 'USD',
                     $row['event_type'] ?? '',
+                    $row['adv1'] ?? '',
                     $row['sub1'] ?? '',
                     $row['sub2'] ?? '',
                     $row['sub3'] ?? '',
