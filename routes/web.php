@@ -94,7 +94,8 @@ $router->post('/account/subscription', [AccountController::class, 'updateSubscri
 
 $router->get('/admin', [AdminDashboardController::class, 'index'], ['auth', 'admin']);
 $router->get('/admin/profile', [ProfileController::class, 'index'], ['auth', 'admin']);
-$router->post('/admin/profile/update-email', [ProfileController::class, 'updateEmail'], ['auth', 'admin', 'csrf']);
+$router->post('/admin/profile/update-profile', [ProfileController::class, 'updateProfile'], ['auth', 'admin', 'csrf']);
+$router->post('/admin/profile/update-email', [ProfileController::class, 'updateProfile'], ['auth', 'admin', 'csrf']);
 $router->post('/admin/profile/update-password', [ProfileController::class, 'updatePassword'], ['auth', 'admin', 'csrf']);
 $router->get('/admin/users', [AdminUserController::class, 'index'], ['auth', 'admin', 'role:admin,super_admin']);
 $router->get('/admin/users/export-csv', [AdminUserController::class, 'exportCsv'], ['auth', 'admin', 'role:admin,super_admin']);

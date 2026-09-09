@@ -21,19 +21,33 @@ final class ProfileController extends Controller
         ], 'admin');
     }
 
-    public function updateEmail(): never
+    public function updateProfile(): never
     {
         $user = $this->auth->user();
         if (!$user) {
             $this->redirect('/login');
         }
 
+        $firstName = trim((string) ($this->request->post('first_name') ?? $user['first_name'] ?? ''));
+        $lastName = trim((string) ($this->request->post('last_name') ?? $user['last_name'] ?? ''));
         $email = strtolower(trim((string) $this->request->post('email', '')));
 
         $v = Validator::make(
-            ['email' => $email],
-            ['email' => 'required|email'],
-            ['email' => 'Email address']
+            [
+                'first_name' => $firstName,
+                'last_name' => $lastName,
+                'email' => $email,
+            ],
+            [
+                'first_name' => 'required|max:80',
+                'last_name' => 'max:80',
+                'email' => 'required|email',
+            ],
+            [
+                'first_name' => 'First name',
+                'last_name' => 'Last name',
+                'email' => 'Email address',
+            ]
         );
 
         if ($v->fails()) {
@@ -54,20 +68,31 @@ final class ProfileController extends Controller
 
         $repo = new UserRepository($this->db);
         $repo->update((int) $user['id'], [
+            'first_name' => $firstName,
+            'last_name' => $lastName,
             'email' => $email,
         ]);
 
         (new AuditService($this->db))->log(
             (int) $user['id'],
-            'admin_email_updated',
+            'admin_profile_updated',
             'user',
             (string) $user['id'],
             $this->request,
-            ['new_email' => $email]
+            [
+                'first_name' => $firstName,
+                'last_name' => $lastName,
+                'new_email' => $email,
+            ]
         );
 
-        $this->flash('success', 'Admin email updated successfully. Use this email for your next login.');
+        $this->flash('success', 'Admin profile details updated successfully.');
         $this->redirect('/admin/profile');
+    }
+
+    public function updateEmail(): never
+    {
+        $this->updateProfile();
     }
 
     public function updatePassword(): never

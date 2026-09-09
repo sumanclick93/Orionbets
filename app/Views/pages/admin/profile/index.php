@@ -23,12 +23,24 @@ $roleLabel = $isSuperAdmin ? 'Super Admin' : (in_array('admin', $roles, true) ? 
             </span>
         </div>
 
-        <form method="post" action="<?= e(url('/admin/profile/update-email')) ?>" class="flow-form">
+        <form method="post" action="<?= e(url('/admin/profile/update-profile')) ?>" class="flow-form">
             <?= csrf_field() ?>
 
-            <div class="field-group" style="margin-bottom:1.25rem;">
-                <label for="admin_name">Admin Name</label>
-                <input id="admin_name" type="text" value="<?= e(trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''))) ?>" disabled readonly style="opacity:0.75; cursor:not-allowed;">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom:1.25rem;">
+                <div class="field-group">
+                    <label for="first_name">First Name</label>
+                    <input id="first_name" type="text" name="first_name" value="<?= e($user['first_name'] ?? '') ?>" required autocomplete="given-name" maxlength="80">
+                    <?php if (error('first_name')): ?>
+                        <p class="field-error"><?= e((string) error('first_name')) ?></p>
+                    <?php endif; ?>
+                </div>
+                <div class="field-group">
+                    <label for="last_name">Last Name</label>
+                    <input id="last_name" type="text" name="last_name" value="<?= e($user['last_name'] ?? '') ?>" autocomplete="family-name" maxlength="80">
+                    <?php if (error('last_name')): ?>
+                        <p class="field-error"><?= e((string) error('last_name')) ?></p>
+                    <?php endif; ?>
+                </div>
             </div>
 
             <div class="field-group" style="margin-bottom:1.25rem;">
@@ -41,7 +53,7 @@ $roleLabel = $isSuperAdmin ? 'Super Admin' : (in_array('admin', $roles, true) ? 
             </div>
 
             <div style="margin-top:1.5rem;">
-                <button class="btn btn-primary" type="submit">Update Email Address</button>
+                <button class="btn btn-primary" type="submit">Update Account Details</button>
             </div>
         </form>
     </div>
