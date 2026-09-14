@@ -25,7 +25,6 @@ $start = $pick['start_time'] ?? $pick['event_at'] ?? $pick['published_at'] ?? nu
         </p>
         <p><?= e($gated ? 'Full analysis is reserved for Premium members.' : (string) ($pick['analysis_excerpt'] ?? '')) ?></p>
         <footer>
-            <span class="confidence">Confidence <strong><?= $gated ? '—' : (int) ($pick['confidence'] ?? 0) ?></strong></span>
             <time datetime="<?= e($pick['published_at'] ?? '') ?>">Published <?= e(format_datetime($pick['published_at'] ?? null)) ?></time>
         </footer>
     </div>

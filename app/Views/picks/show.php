@@ -28,9 +28,17 @@ $start = $pick['start_time'] ?? $pick['event_at'] ?? null;
                     <?php if (!empty($pick['odds'])): ?> · <?= e((string) $pick['odds']) ?><?php endif; ?>
                     <?php if ($pick['units'] !== null && $pick['units'] !== ''): ?> · <?= e((string) $pick['units']) ?>u<?php endif; ?>
                 </p>
-                <p>Confidence <strong class="confidence"><?= (int) $pick['confidence'] ?></strong> · Published <?= e(format_datetime($pick['published_at'] ?? null)) ?></p>
-                <h2>Analysis</h2>
-                <p><?= nl2br(e((string) $pick['analysis'])) ?></p>
+                <p>Published <?= e(format_datetime($pick['published_at'] ?? null)) ?></p>
+                <?php 
+                $analysisText = trim((string) ($pick['analysis'] ?? ''));
+                $hasRealAnalysis = $analysisText !== '' && strtolower($analysisText) !== 'synced from action network.';
+                ?>
+                <?php if ($hasRealAnalysis): ?>
+                    <h2>Analysis</h2>
+                    <p><?= nl2br(e($analysisText)) ?></p>
+                <?php else: ?>
+                    <p class="muted" style="margin-top:1rem;font-style:italic;font-size:0.9rem;">Automated line pick synced from Action Network. Handicapper commentary pending.</p>
+                <?php endif; ?>
                 <?php if ($factors): ?>
                     <h3>Key factors</h3>
                     <ul><?php foreach ($factors as $factor): ?><li><?= e(is_string($factor) ? $factor : '') ?></li><?php endforeach; ?></ul>

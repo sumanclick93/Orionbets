@@ -1068,10 +1068,11 @@ final class ActionNetworkService
         $catalog = $this->resolveCatalog($leagueSlug, (string) ($pick['sport'] ?? ''));
         $eventId = $this->localEventId((string) ($pick['event_id'] ?? $pick['game_id'] ?? ''));
         $matchup = trim((string) ($pick['matchup'] ?? ''));
+        $selectionLine = trim((string) ($pick['selection_line'] ?? ''));
         if ($matchup === '') {
-            $matchup = 'Playbook pick';
+            $matchup = $selectionLine !== '' ? $selectionLine : 'Playbook pick';
         }
-        $title = trim($matchup . ' · ' . (string) ($pick['selection_line'] ?? ''));
+        $title = trim($matchup !== $selectionLine && $selectionLine !== '' ? $matchup . ' · ' . $selectionLine : $matchup);
         $analysis = trim((string) ($pick['analysis'] ?? ''));
         $status = (string) ($pick['status'] ?? 'pending');
 

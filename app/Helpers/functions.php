@@ -559,7 +559,7 @@ function pick_selection_label(array $pick): string
 function pick_matchup_label(array $pick): string
 {
     $matchup = trim((string) ($pick['matchup'] ?? $pick['matchup_label'] ?? $pick['event_name'] ?? ''));
-    if ($matchup !== '') {
+    if ($matchup !== '' && strcasecmp($matchup, 'Playbook pick') !== 0) {
         return $matchup;
     }
     $away = trim((string) ($pick['away_team'] ?? ''));
@@ -567,7 +567,15 @@ function pick_matchup_label(array $pick): string
     if ($away !== '' && $home !== '') {
         return $away . ' @ ' . $home;
     }
-    return (string) ($pick['title'] ?? 'Playbook pick');
+    $title = trim((string) ($pick['title'] ?? ''));
+    if ($title !== '' && strcasecmp($title, 'Playbook pick') !== 0) {
+        return $title;
+    }
+    $sel = trim((string) ($pick['selection_line'] ?? ''));
+    if ($sel !== '') {
+        return $sel;
+    }
+    return 'Playbook pick';
 }
 
 function everflow_config(): array
