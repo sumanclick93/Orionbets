@@ -1069,10 +1069,10 @@ final class ActionNetworkService
         $eventId = $this->localEventId((string) ($pick['event_id'] ?? $pick['game_id'] ?? ''));
         $matchup = trim((string) ($pick['matchup'] ?? ''));
         $selectionLine = trim((string) ($pick['selection_line'] ?? ''));
-        if ($matchup === '') {
-            $matchup = $selectionLine !== '' ? $selectionLine : 'Playbook pick';
+        if ($matchup === '' || strcasecmp($matchup, 'Playbook pick') === 0) {
+            $matchup = $selectionLine;
         }
-        $title = trim($matchup !== $selectionLine && $selectionLine !== '' ? $matchup . ' · ' . $selectionLine : $matchup);
+        $title = trim($matchup !== '' && $selectionLine !== '' && $matchup !== $selectionLine ? $matchup . ' · ' . $selectionLine : ($selectionLine !== '' ? $selectionLine : ($matchup !== '' ? $matchup : 'Playbook pick')));
         $analysis = trim((string) ($pick['analysis'] ?? ''));
         $status = (string) ($pick['status'] ?? 'pending');
 

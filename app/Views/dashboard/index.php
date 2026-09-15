@@ -22,7 +22,21 @@
     <section class="panel">
         <h2>Recent results</h2>
         <?php foreach ($results as $row): ?>
-            <p><span class="badge badge-<?= e($row['status']) ?>"><?= e(pick_status_label($row['status'])) ?></span> <?= e($row['title']) ?></p>
+            <?php 
+            $matchup = pick_matchup_label($row);
+            $selection = pick_selection_label($row);
+            if ($matchup !== '' && strcasecmp($matchup, 'Playbook pick') !== 0) {
+                $label = $matchup . ($selection !== '' ? ' · ' . $selection : '');
+            } elseif ($selection !== '') {
+                $label = $selection;
+            } else {
+                $label = trim(str_replace('Playbook pick · ', '', (string) ($row['title'] ?? '')));
+            }
+            ?>
+            <p>
+                <span class="badge badge-<?= e($row['result'] ?? $row['status'] ?? 'completed') ?>"><?= e(pick_status_label((string) ($row['result'] ?? $row['status'] ?? ''))) ?></span> 
+                <a href="<?= e(url('/picks/' . ($row['slug'] ?? ''))) ?>"><?= e($label) ?></a>
+            </p>
         <?php endforeach; ?>
     </section>
     <section class="panel">
