@@ -4,7 +4,7 @@
     <?= component('stat-card', ['label' => 'DAU', 'value' => (string) $dau]) ?>
     <?= component('stat-card', ['label' => 'Published', 'value' => (string) $published]) ?>
     <?= component('stat-card', ['label' => 'Completed', 'value' => (string) $completed]) ?>
-    <?= component('stat-card', ['label' => 'Revenue (demo)', 'value' => money((int) $revenue)]) ?>
+    <?= component('stat-card', ['label' => 'PayPal Revenue', 'value' => money((int) $revenue)]) ?>
     <?= component('stat-card', ['label' => 'Win rate', 'value' => ($stats['win_rate'] ?? 0) . '%']) ?>
 </div>
 <section class="panel" style="margin-top:1rem;">

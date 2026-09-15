@@ -26,7 +26,7 @@ final class AdminDashboardController extends Controller
             'dau' => $users->dailyActive(1),
             'published' => $counts['published'],
             'completed' => $counts['completed'],
-            'revenue' => $subs->revenueCents(),
+            'revenue' => $subs->revenueCents('paypal'),
             'recent' => $users->recent(),
             'stats' => (new PerformanceService($this->db))->summary('all'),
         ], 'admin');

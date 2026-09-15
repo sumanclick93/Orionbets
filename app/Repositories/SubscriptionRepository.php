@@ -88,8 +88,15 @@ final class SubscriptionRepository extends BaseRepository
         );
     }
 
-    public function revenueCents(): int
+    public function revenueCents(?string $provider = null): int
     {
+        if ($provider !== null && $provider !== '') {
+            return (int) $this->db->fetchColumn(
+                "SELECT COALESCE(SUM(amount_cents),0) FROM subscription_transactions WHERE status = 'completed' AND LOWER(provider) = :provider",
+                ['provider' => strtolower($provider)]
+            );
+        }
+
         return (int) $this->db->fetchColumn(
             "SELECT COALESCE(SUM(amount_cents),0) FROM subscription_transactions WHERE status = 'completed'"
         );
