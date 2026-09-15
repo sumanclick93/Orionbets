@@ -380,22 +380,32 @@ final class UserRepository extends BaseRepository
         return 'deleted+' . $id . '@invalid.local';
     }
 
-    public function countActive(): int
+    public function countActive(bool $uniqueOnly = true, bool $excludeGuests = true): int
     {
-        return (int) $this->db->fetchColumn('SELECT COUNT(*) FROM users WHERE is_active = 1 AND deleted_at IS NULL');
+        $where = ['is_active = 1', 'deleted_at IS NULL'];
+        if ($excludeGuests) {
+            $where[] = 'is_guest = 0';
+        }
+        $whereSql = implode(' AND ', $where);
+
+        if ($uniqueOnly) {
+            return (int) $this->db->fetchColumn("SELECT COUNT(DISTINCT LOWER(email)) FROM users WHERE {$whereSql}");
+        }
+
+        return (int) $this->db->fetchColumn("SELECT COUNT(*) FROM users WHERE {$whereSql}");
     }
 
     public function recent(int $limit = 8): array
     {
         return $this->db->fetchAll(
-            'SELECT id, first_name, last_name, email, created_at FROM users WHERE deleted_at IS NULL ORDER BY created_at DESC LIMIT ' . (int) $limit
+            'SELECT id, first_name, last_name, email, created_at FROM users WHERE deleted_at IS NULL AND is_guest = 0 ORDER BY created_at DESC LIMIT ' . (int) $limit
         );
     }
 
     public function dailyActive(int $days = 1): int
     {
         return (int) $this->db->fetchColumn(
-            'SELECT COUNT(*) FROM users WHERE last_login_at >= DATE_SUB(NOW(), INTERVAL :d DAY)',
+            'SELECT COUNT(DISTINCT LOWER(email)) FROM users WHERE last_login_at >= DATE_SUB(NOW(), INTERVAL :d DAY) AND deleted_at IS NULL',
             ['d' => $days]
         );
     }
