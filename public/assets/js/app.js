@@ -870,27 +870,14 @@
         box.innerHTML = '';
         paypalButtons = paypal.Buttons({
           style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'paypal' },
-          onInit: (_data, actions) => {
-            const sync = () => {
-              try {
-                if (paypalFields().ok) actions.enable();
-                else actions.disable();
-              } catch (err) {}
-            };
-            sync();
-            [firstNameEl, lastNameEl, paypalEmailEl].forEach((el) => {
-              if (el) el.addEventListener('input', sync);
-            });
-          },
+          onInit: () => {},
           onClick: (_data, actions) => {
             const fields = paypalFields();
             if (!fields.ok) {
               showError(fields.error);
-              lockPaypalIdentity(false);
               return actions.reject();
             }
             showError('');
-            lockPaypalIdentity(true);
             return actions.resolve();
           },
           createOrder: async () => {

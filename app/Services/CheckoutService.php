@@ -640,7 +640,7 @@ final class CheckoutService
             $this->users->assignRole((int) $user['id'], 'premium_user');
         }
 
-        if ($session) {
+        if ($session && !empty($session['id'])) {
             $update = [
                 'status' => 'completed',
                 'user_id' => $user['id'],

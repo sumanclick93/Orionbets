@@ -431,6 +431,11 @@ function discord_oauth_is_popup(): bool
         || (string) ($_SESSION['discord_oauth_popup'] ?? '') === '1';
 }
 
+function discord_configured(): bool
+{
+    return (new \App\Services\DiscordService())->configured();
+}
+
 function json_decode_array(mixed $value): array
 {
     if (is_array($value)) {
@@ -625,7 +630,7 @@ function everflow_csp_hosts(): string
 
 function is_everflow_transaction_id(string $value): bool
 {
-    return (bool) preg_match('/^[A-Fa-f0-9]{32}$/', $value);
+    return (bool) preg_match('/^[a-zA-Z0-9_\-]{8,128}$/', $value);
 }
 
 function plan_price_label(array $plan): string
