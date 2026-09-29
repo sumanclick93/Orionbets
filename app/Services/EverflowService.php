@@ -415,19 +415,19 @@ final class EverflowService
 
     public function shouldConvert(string $eventType, string $status): bool
     {
-        if ($status === 'cancelled') {
+        $statusNormalized = strtolower(trim($status));
+        if (!in_array($statusNormalized, ['completed', 'paid', 'succeeded', 'active'], true)) {
             return false;
         }
 
-        $type = strtolower($eventType);
+        $type = strtolower(trim($eventType));
         if ($type === '') {
-            return $status === 'completed';
+            return $statusNormalized === 'completed';
         }
 
+        // Only confirmed paid events trigger purchase conversions
         return in_array($type, [
-            'order.created',
             'order.completed',
-            'order.updated',
             'subscription.created',
             'subscription.renewed',
             'invoice.paid',
@@ -481,6 +481,48 @@ final class EverflowService
                 $adv1 = 'discord';
             } elseif ($adv1 !== '') {
                 $adv1 = substr($adv1, 0, 64);
+            }
+
+            // Guard: Never fire a purchase conversion postback for $0 or missing order/adv1/transaction data
+            $isPurchaseConversion = ($eventId === '' || in_array(strtolower($kind), ['sale', 'rebill', 'subscription', 'purchase'], true));
+            if ($isPurchaseConversion && ($amount <= 0 || empty($orderId) || empty($tid) || empty($adv1))) {
+                $skipReason = 'Zero revenue or missing Adv1 - Postback omitted';
+                Logger::warning('Everflow postback skipped — guard rule', [
+                    'reason' => $skipReason,
+                    'amount' => $amount,
+                    'order_id' => $orderId,
+                    'transaction_id' => $tid,
+                    'adv1' => $adv1,
+                    'kind' => $kind,
+                    'email' => $email,
+                ]);
+
+                $this->persistPostback([
+                    'id' => isset($payload['postback_id']) ? (int) $payload['postback_id'] : 0,
+                    'kind' => $kind,
+                    'user_id' => $userId,
+                    'email' => $email !== '' ? $email : null,
+                    'order_id' => $orderId !== '' ? $orderId : null,
+                    'order_number' => $orderNumber !== '' ? $orderNumber : null,
+                    'transaction_id' => $tid !== '' ? $tid : null,
+                    'everflow_transaction_id' => $tid !== '' ? $tid : null,
+                    'amount' => $amount,
+                    'currency' => $currency,
+                    'event_type' => $eventType,
+                    'adv1' => $adv1 !== '' ? $adv1 : null,
+                    'sub1' => $subs['sub1'] !== '' ? $subs['sub1'] : null,
+                    'sub2' => $subs['sub2'] !== '' ? $subs['sub2'] : null,
+                    'sub3' => $subs['sub3'] !== '' ? $subs['sub3'] : null,
+                    'sub4' => $subs['sub4'] !== '' ? $subs['sub4'] : null,
+                    'sub5' => $subs['sub5'] !== '' ? $subs['sub5'] : null,
+                    'postback_url' => null,
+                    'http_status' => null,
+                    'response_body' => null,
+                    'status' => 'skipped',
+                    'error_message' => $skipReason,
+                ]);
+
+                return false;
             }
 
             if ($tid === '') {

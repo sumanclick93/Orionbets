@@ -9,6 +9,7 @@ $failedPending = (int) ($stats['failed'] ?? 0) + (int) ($stats['pending'] ?? 0);
 $tabs = [
     '' => 'All',
     'success' => 'Success',
+    'skipped' => 'Skipped',
     'failed' => 'Failed',
     'pending' => 'Pending',
 ];
@@ -18,7 +19,7 @@ $filterUrl = static function (string $value) use ($q, $from, $to): string {
 };
 $statusOf = static function (array $row): string {
     $status = strtolower(trim((string) ($row['status'] ?? '')));
-    if (in_array($status, ['success', 'failed', 'pending'], true)) {
+    if (in_array($status, ['success', 'failed', 'pending', 'skipped'], true)) {
         return $status;
     }
     $http = (int) ($row['http_status'] ?? 0);
@@ -34,6 +35,7 @@ $badgeClass = static function (string $status): string {
     return match ($status) {
         'success' => 'badge-won',
         'failed' => 'badge-lost',
+        'skipped' => 'badge-push',
         default => 'badge-push',
     };
 };

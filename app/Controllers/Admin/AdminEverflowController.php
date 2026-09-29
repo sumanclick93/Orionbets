@@ -187,7 +187,7 @@ final class AdminEverflowController extends Controller
     private function statusOf(array $row): string
     {
         $status = strtolower(trim((string) ($row['status'] ?? '')));
-        if (in_array($status, ['success', 'failed', 'pending'], true)) {
+        if (in_array($status, ['success', 'failed', 'pending', 'skipped'], true)) {
             return $status;
         }
         $http = (int) ($row['http_status'] ?? 0);
