@@ -280,51 +280,33 @@
     }
   };
 
-  var fireConversion = function (EF, details) {
-    if (!details || !tid) return;
-    try {
-      EF.conversion(attachSubs({
-        transaction_id: tid,
-        amount: details.amount,
-        order_id: details.order_id
-      }));
-    } catch (err) {}
-  };
+    if (typeof window.EF !== 'undefined') trackClick(window.EF);
+    else ready(trackClick);
 
-  if (typeof window.EF !== 'undefined') trackClick(window.EF);
-  else ready(trackClick);
-
-  var thanks = window.orionThankYou;
-  if (thanks) {
-    if (thanks.everflow_transaction_id && valid(thanks.everflow_transaction_id)) {
-      tid = thanks.everflow_transaction_id;
-      window.orionEverflowTid = tid;
-      stored = writeStore({ id: tid });
+    var thanks = window.orionThankYou;
+    if (thanks) {
+      if (thanks.everflow_transaction_id && valid(thanks.everflow_transaction_id)) {
+        tid = thanks.everflow_transaction_id;
+        window.orionEverflowTid = tid;
+        stored = writeStore({ id: tid });
+      }
+      if (thanks.pending && thanks.token) {
+        var ticks = 0;
+        var poll = window.setInterval(function () {
+          ticks += 1;
+          fetch((thanks.status_url || '/checkout/status') + '?token=' + encodeURIComponent(thanks.token) + '&probe=1', {
+            credentials: 'same-origin',
+            headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+          }).then(function (res) { return res.json(); }).then(function (data) {
+            if (data && data.status === 'completed') {
+              window.clearInterval(poll);
+              window.location.reload();
+            }
+            if (ticks > 40) window.clearInterval(poll);
+          }).catch(function () {});
+        }, 3000);
+      }
     }
-    var convert = function () {
-      ready(function (EF) {
-        fireConversion(EF, thanks);
-      });
-    };
-    if (thanks.paid) {
-      convert();
-    } else if (thanks.pending && thanks.token) {
-      var ticks = 0;
-      var poll = window.setInterval(function () {
-        ticks += 1;
-        fetch((thanks.status_url || '/checkout/status') + '?token=' + encodeURIComponent(thanks.token) + '&probe=1', {
-          credentials: 'same-origin',
-          headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-        }).then(function (res) { return res.json(); }).then(function (data) {
-          if (data && data.status === 'completed') {
-            window.clearInterval(poll);
-            window.location.reload();
-          }
-          if (ticks > 40) window.clearInterval(poll);
-        }).catch(function () {});
-      }, 3000);
-    }
-  }
 
   window.orionEverflowId = function () {
     return tid || readStore().id || '';

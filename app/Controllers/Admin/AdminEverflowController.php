@@ -160,7 +160,7 @@ final class AdminEverflowController extends Controller
     private function filters(): array
     {
         $status = strtolower(trim((string) $this->request->query('status', '')));
-        if (!in_array($status, ['', 'success', 'failed', 'pending'], true)) {
+        if (!in_array($status, ['', 'success', 'failed', 'pending', 'skipped'], true)) {
             $status = '';
         }
 

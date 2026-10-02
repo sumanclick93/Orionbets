@@ -221,7 +221,7 @@ final class EverflowRepository extends BaseRepository
      */
     public function postbackStats(array $filters = []): array
     {
-        $empty = ['total' => 0, 'success' => 0, 'failed' => 0, 'pending' => 0, 'revenue' => 0.0];
+        $empty = ['total' => 0, 'success' => 0, 'failed' => 0, 'pending' => 0, 'skipped' => 0, 'revenue' => 0.0];
         if (!$this->db->tableExists('everflow_postbacks')) {
             return $empty;
         }
@@ -240,6 +240,7 @@ final class EverflowRepository extends BaseRepository
                 SUM(CASE WHEN {$statusExpr} = 'success' THEN 1 ELSE 0 END) AS success_count,
                 SUM(CASE WHEN {$statusExpr} = 'failed' THEN 1 ELSE 0 END) AS failed_count,
                 SUM(CASE WHEN {$statusExpr} = 'pending' THEN 1 ELSE 0 END) AS pending_count,
+                SUM(CASE WHEN {$statusExpr} = 'skipped' THEN 1 ELSE 0 END) AS skipped_count,
                 COALESCE(SUM(CASE WHEN {$statusExpr} = 'success' THEN p.amount ELSE 0 END), 0) AS revenue
              FROM {$this->postbackFrom()}
              {$where}",
@@ -251,6 +252,7 @@ final class EverflowRepository extends BaseRepository
             'success' => (int) ($row['success_count'] ?? 0),
             'failed' => (int) ($row['failed_count'] ?? 0),
             'pending' => (int) ($row['pending_count'] ?? 0),
+            'skipped' => (int) ($row['skipped_count'] ?? 0),
             'revenue' => (float) ($row['revenue'] ?? 0),
         ];
     }
@@ -316,7 +318,7 @@ final class EverflowRepository extends BaseRepository
         }
 
         $status = strtolower(trim((string) ($filters['status'] ?? '')));
-        if (in_array($status, ['success', 'failed', 'pending'], true)) {
+        if (in_array($status, ['success', 'failed', 'pending', 'skipped'], true)) {
             if ($this->hasColumn('everflow_postbacks', 'status')) {
                 $clauses[] = 'p.status = :st';
                 $params['st'] = $status;

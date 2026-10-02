@@ -483,10 +483,50 @@ final class EverflowService
                 $adv1 = substr($adv1, 0, 64);
             }
 
-            // Guard: Never fire a purchase conversion postback for $0 or missing order/adv1/transaction data
-            $isPurchaseConversion = ($eventId === '' || in_array(strtolower($kind), ['sale', 'rebill', 'subscription', 'purchase'], true));
-            if ($isPurchaseConversion && ($amount <= 0 || empty($orderId) || empty($tid) || empty($adv1))) {
-                $skipReason = 'Zero revenue or missing Adv1 - Postback omitted';
+            $isPurchaseKind = in_array(strtolower($kind), ['sale', 'rebill', 'subscription', 'purchase'], true);
+
+            // 1. Non-purchase events (lead, contact, checkout, signup, pageview, registration) MUST NOT hit base conversion endpoint without an event_id
+            if (!$isPurchaseKind && $eventId === '') {
+                $skipReason = 'Missing event_id for non-purchase event - Base conversion postback omitted';
+                Logger::warning('Everflow postback skipped — guard rule', [
+                    'reason' => $skipReason,
+                    'kind' => $kind,
+                    'transaction_id' => $tid,
+                    'email' => $email,
+                ]);
+
+                $this->persistPostback([
+                    'id' => isset($payload['postback_id']) ? (int) $payload['postback_id'] : 0,
+                    'kind' => $kind,
+                    'user_id' => $userId,
+                    'email' => $email !== '' ? $email : null,
+                    'order_id' => $orderId !== '' ? $orderId : null,
+                    'order_number' => $orderNumber !== '' ? $orderNumber : null,
+                    'transaction_id' => $tid !== '' ? $tid : null,
+                    'everflow_transaction_id' => $tid !== '' ? $tid : null,
+                    'amount' => $amount,
+                    'currency' => $currency,
+                    'event_type' => $eventType,
+                    'adv1' => $adv1 !== '' ? $adv1 : null,
+                    'sub1' => $subs['sub1'] !== '' ? $subs['sub1'] : null,
+                    'sub2' => $subs['sub2'] !== '' ? $subs['sub2'] : null,
+                    'sub3' => $subs['sub3'] !== '' ? $subs['sub3'] : null,
+                    'sub4' => $subs['sub4'] !== '' ? $subs['sub4'] : null,
+                    'sub5' => $subs['sub5'] !== '' ? $subs['sub5'] : null,
+                    'postback_url' => null,
+                    'http_status' => null,
+                    'response_body' => null,
+                    'status' => 'skipped',
+                    'error_message' => $skipReason,
+                ]);
+
+                return false;
+            }
+
+            // 2. Guard: Never fire base conversion postbacks for $0, missing order, missing transaction, or missing payment method (adv1)
+            $isBaseConversion = ($eventId === '');
+            if (($isPurchaseKind || $isBaseConversion) && ($amount <= 0 || empty($orderId) || empty($tid) || empty($adv1))) {
+                $skipReason = 'Zero revenue or missing required purchase parameters (order_id, transaction_id, adv1) - Postback omitted';
                 Logger::warning('Everflow postback skipped — guard rule', [
                     'reason' => $skipReason,
                     'amount' => $amount,

@@ -572,7 +572,7 @@ final class Schema
                     http_status INT NULL,
                     response_body TEXT NULL,
                     response TEXT NULL,
-                    status ENUM('success', 'failed', 'pending') NOT NULL DEFAULT 'pending',
+                    status ENUM('success', 'failed', 'pending', 'skipped') NOT NULL DEFAULT 'pending',
                     error_message TEXT NULL,
                     email VARCHAR(190) NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -606,7 +606,7 @@ final class Schema
         self::addColumn($db, 'everflow_postbacks', 'http_status', '`http_status` INT NULL');
         $migrated = self::addColumn($db, 'everflow_postbacks', 'response_body', '`response_body` TEXT NULL') || $migrated;
         self::addColumn($db, 'everflow_postbacks', 'response', '`response` TEXT NULL');
-        $migrated = self::addColumn($db, 'everflow_postbacks', 'status', "`status` ENUM('success','failed','pending') NOT NULL DEFAULT 'pending'") || $migrated;
+        $migrated = self::addColumn($db, 'everflow_postbacks', 'status', "`status` ENUM('success','failed','pending','skipped') NOT NULL DEFAULT 'pending'") || $migrated;
         self::addColumn($db, 'everflow_postbacks', 'error_message', '`error_message` TEXT NULL');
         self::addColumn($db, 'everflow_postbacks', 'email', '`email` VARCHAR(190) NULL');
         self::addIndex($db, 'everflow_postbacks', 'idx_ef_pb_order_number', 'INDEX `idx_ef_pb_order_number` (`order_number`)');
@@ -617,6 +617,7 @@ final class Schema
         self::ensureVarchar($db, 'everflow_postbacks', 'everflow_transaction_id', 128);
         self::ensureVarchar($db, 'everflow_postbacks', 'currency', 10);
         self::ensureVarchar($db, 'everflow_postbacks', 'event_type', 64);
+        self::ensureVarchar($db, 'everflow_postbacks', 'status', 20);
         self::ensureIntColumn($db, 'everflow_postbacks', 'http_status');
         self::addIndex($db, 'everflow_postbacks', 'idx_ef_pb_user', 'INDEX `idx_ef_pb_user` (`user_id`)');
         self::addIndex($db, 'everflow_postbacks', 'idx_ef_pb_order', 'INDEX `idx_ef_pb_order` (`order_id`)');
